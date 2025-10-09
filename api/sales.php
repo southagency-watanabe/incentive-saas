@@ -66,16 +66,19 @@ try {
       $stmt->execute($params);
       $sales = $stmt->fetchAll();
 
-      // 合計金額計算
+      // 合計金額と合計付与PT計算
       $total = 0;
+      $total_points = 0;
       foreach ($sales as $sale) {
         $total += $sale['quantity'] * $sale['unit_price'];
+        $total_points += $sale['final_point'];
       }
 
       echo json_encode([
         'success' => true,
         'data' => $sales,
-        'total' => $total
+        'total' => $total,
+        'total_points' => $total_points
       ]);
       break;
 
@@ -293,6 +296,68 @@ try {
           'event_multiplier' => $event_multiplier,
           'final_point' => $final_point
         ]
+      ]);
+      break;
+
+    case 'DELETE':
+      // 削除（管理者のみ）
+      if ($_SESSION['role'] !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'この操作は管理者のみ実行できます。']);
+        exit;
+      }
+
+      $sale_id = $_GET['id'] ?? null;
+      if (!$sale_id) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => '売上IDが指定されていません。']);
+        exit;
+      }
+
+      // 売上レコードの存在確認
+      $stmt = $pdo->prepare("
+        SELECT id, product_id, quantity, unit_price
+        FROM sales_records
+        WHERE tenant_id = :tenant_id AND id = :id
+      ");
+      $stmt->execute([
+        'tenant_id' => $tenant_id,
+        'id' => $sale_id
+      ]);
+      $sale = $stmt->fetch();
+
+      if (!$sale) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => '売上レコードが見つかりません。']);
+        exit;
+      }
+
+      // 削除実行
+      $stmt = $pdo->prepare("
+        DELETE FROM sales_records
+        WHERE tenant_id = :tenant_id AND id = :id
+      ");
+      $stmt->execute([
+        'tenant_id' => $tenant_id,
+        'id' => $sale_id
+      ]);
+
+      // 監査ログ
+      $stmt = $pdo->prepare("
+        INSERT INTO audit_logs (tenant_id, action, table_name, row_id, operator, user_display_name, details)
+        VALUES (:tenant_id, '削除', 'sales_records', :row_id, :operator, :name, :details)
+      ");
+      $stmt->execute([
+        'tenant_id' => $tenant_id,
+        'row_id' => $sale_id,
+        'operator' => $_SESSION['member_id'],
+        'name' => $_SESSION['name'],
+        'details' => json_encode($sale, JSON_UNESCAPED_UNICODE)
+      ]);
+
+      echo json_encode([
+        'success' => true,
+        'message' => '売上レコードを削除しました。'
       ]);
       break;
 

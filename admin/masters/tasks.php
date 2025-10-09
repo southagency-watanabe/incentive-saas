@@ -14,55 +14,72 @@ requireAdmin();
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 min-h-screen">
-  <!-- ヘッダー -->
-  <header class="bg-white shadow">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-800">インセンティブSaaS</h1>
-        <p class="text-sm text-gray-600">タスクマスタ</p>
-      </div>
-      <div class="flex items-center gap-4">
-        <span class="text-gray-700"><?= htmlspecialchars($_SESSION['name']) ?> さん</span>
-        <a href="/api/logout.php" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">ログアウト</a>
+<body class="bg-gray-100 min-h-screen flex">
+  <!-- サイドバー -->
+  <aside class="w-64 bg-white shadow-lg h-screen sticky top-0 flex flex-col">
+    <!-- ロゴ・ヘッダー部分 -->
+    <div class="p-6 border-b">
+      <h1 class="text-xl font-bold text-gray-800">インセンティブSaaS</h1>
+    </div>
+
+    <!-- ナビゲーション -->
+    <nav class="flex-1 overflow-y-auto py-4">
+      <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>ダッシュボード</span>
+      </a>
+      <a href="/admin/masters/members.php" class="flex items-center px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
+        <span class="font-medium">マスタ管理</span>
+      </a>
+      <a href="/admin/sales/input.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>売上管理</span>
+      </a>
+      <a href="/admin/approvals.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>承認管理</span>
+      </a>
+      <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>実績管理</span>
+      </a>
+      <a href="/admin/bulletins.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>掲示板管理</span>
+      </a>
+    </nav>
+
+    <!-- ユーザー情報・ログアウト -->
+    <div class="border-t p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-700"><?= htmlspecialchars($_SESSION['name']) ?> さん</span>
+        <a href="/api/logout.php" class="text-sm text-red-600 hover:text-red-700 font-medium">ログアウト</a>
       </div>
     </div>
-  </header>
+  </aside>
 
-  <!-- ナビゲーション -->
-  <nav class="bg-white border-b">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex space-x-8">
-        <a href="/admin/dashboard.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">ダッシュボード</a>
-        <a href="/admin/masters/tasks.php" class="py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">マスタ管理</a>
-        <a href="#" class="py-4 px-2 text-gray-600 hover:text-gray-900">売上管理</a>
-        <a href="#" class="py-4 px-2 text-gray-600 hover:text-gray-900">承認管理</a>
-        <a href="#" class="py-4 px-2 text-gray-600 hover:text-gray-900">実績管理</a>
-        <a href="/admin/bulletins.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">掲示板管理</a>
-        <a href="/admin/ranking.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">ランキング</a>
+  <!-- メインコンテンツエリア -->
+  <div class="flex-1 overflow-y-auto">
+    <!-- ページヘッダー -->
+    <header class="bg-white shadow-sm border-b">
+      <div class="px-8 py-6">
+        <h2 class="text-2xl font-bold text-gray-800">タスクマスタ</h2>
       </div>
-    </div>
-  </nav>
-
-  <!-- サブナビゲーション（マスタ切り替え） -->
-  <div class="bg-gray-50 border-b">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex space-x-6">
-        <a href="/admin/masters/members.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">メンバー</a>
-        <a href="/admin/masters/teams.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">チーム</a>
-        <a href="/admin/masters/products.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">商品</a>
-        <a href="/admin/masters/actions.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">アクション</a>
-        <a href="/admin/masters/tasks.php" class="py-3 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">タスク</a>
-        <a href="/admin/masters/events.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">イベント</a>
+      <!-- サブナビゲーション（マスタ切り替え） -->
+      <div class="bg-gray-50 border-t">
+        <div class="px-8">
+          <div class="flex space-x-6">
+            <a href="/admin/masters/members.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">メンバー</a>
+            <a href="/admin/masters/teams.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">チーム</a>
+            <a href="/admin/masters/products.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">商品</a>
+            <a href="/admin/masters/actions.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">アクション</a>
+            <a href="/admin/masters/tasks.php" class="py-3 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">タスク</a>
+            <a href="/admin/masters/events.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">イベント</a>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+    </header>
 
-  <!-- メインコンテンツ -->
-  <main class="max-w-7xl mx-auto px-4 py-8">
-    <!-- ヘッダーアクション -->
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold text-gray-800">タスク一覧</h2>
+    <!-- メインコンテンツ -->
+    <main class="px-8 py-8">
+      <!-- ヘッダーアクション -->
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-800">タスク一覧</h3>
       <div class="flex gap-3">
         <button id="refreshBtn" onclick="refreshList()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center gap-2">
           <span id="refreshIcon">🔄</span>
@@ -82,6 +99,7 @@ requireAdmin();
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">タスクID</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">タスク名</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">種別</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">期間</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">繰り返し</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">設定</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">付与pt</th>
@@ -134,6 +152,21 @@ requireAdmin();
               <option value="毎週">毎週</option>
               <option value="毎月">毎月</option>
             </select>
+          </div>
+        </div>
+
+        <!-- 日時設定 -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">開始日時</label>
+            <input type="datetime-local" id="startDatetime" name="start_datetime" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            <p class="text-sm text-gray-500 mt-1">未指定の場合は無期限</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">終了日時</label>
+            <input type="datetime-local" id="endDatetime" name="end_datetime" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            <p class="text-sm text-gray-500 mt-1">未指定の場合は無期限</p>
           </div>
         </div>
 
@@ -301,7 +334,7 @@ requireAdmin();
       tbody.innerHTML = '';
 
       if (tasks.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
         return;
       }
 
@@ -313,6 +346,14 @@ requireAdmin();
           setting = task.day_of_month + '日';
         }
 
+        // 期間の表示
+        let period = '-';
+        if (task.start_datetime || task.end_datetime) {
+          const start = task.start_datetime ? task.start_datetime.replace('T', ' ') : '-';
+          const end = task.end_datetime ? task.end_datetime.replace('T', ' ') : '-';
+          period = `${start}<br>〜<br>${end}`;
+        }
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(task.task_id)}</td>
@@ -322,6 +363,7 @@ requireAdmin();
                             ${escapeHtml(task.type)}
                         </span>
                     </td>
+                    <td class="px-6 py-4 text-sm text-gray-500 text-center">${period}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(task.repeat_type)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(setting)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(task.point)}</td>
@@ -364,6 +406,8 @@ requireAdmin();
         document.getElementById('taskName').value = data.task_name;
         document.getElementById('type').value = data.type;
         document.getElementById('repeatType').value = data.repeat_type;
+        document.getElementById('startDatetime').value = data.start_datetime || '';
+        document.getElementById('endDatetime').value = data.end_datetime || '';
         document.getElementById('point').value = data.point;
         document.getElementById('dailyLimit').value = data.daily_limit;
         document.getElementById('approvalRequired').value = data.approval_required;
@@ -425,6 +469,8 @@ requireAdmin();
         repeat_type: repeatType,
         days_of_week: daysOfWeek,
         day_of_month: dayOfMonth,
+        start_datetime: formData.get('start_datetime'),
+        end_datetime: formData.get('end_datetime'),
         point: formData.get('point'),
         daily_limit: formData.get('daily_limit'),
         approval_required: formData.get('approval_required'),
@@ -534,6 +580,8 @@ requireAdmin();
       return div.innerHTML;
     }
   </script>
+    </main>
+  </div>
 </body>
 
 </html>

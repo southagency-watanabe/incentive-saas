@@ -16,13 +16,15 @@ try {
     case 'GET':
       // 一覧取得
       $stmt = $pdo->prepare("
-                SELECT 
+                SELECT
                     task_id,
                     task_name,
                     type,
                     repeat_type,
                     days_of_week,
                     day_of_month,
+                    start_datetime,
+                    end_datetime,
                     point,
                     daily_limit,
                     approval_required,
@@ -120,12 +122,12 @@ try {
       $stmt = $pdo->prepare("
                 INSERT INTO tasks (
                     task_id, tenant_id, task_name, type, repeat_type,
-                    days_of_week, day_of_month, point, daily_limit,
-                    approval_required, status, description
+                    days_of_week, day_of_month, start_datetime, end_datetime,
+                    point, daily_limit, approval_required, status, description
                 ) VALUES (
                     :task_id, :tenant_id, :task_name, :type, :repeat_type,
-                    :days_of_week, :day_of_month, :point, :daily_limit,
-                    :approval_required, :status, :description
+                    :days_of_week, :day_of_month, :start_datetime, :end_datetime,
+                    :point, :daily_limit, :approval_required, :status, :description
                 )
             ");
 
@@ -137,6 +139,8 @@ try {
         'repeat_type' => $input['repeat_type'],
         'days_of_week' => $days_of_week,
         'day_of_month' => $day_of_month,
+        'start_datetime' => $input['start_datetime'] ?: null,
+        'end_datetime' => $input['end_datetime'] ?: null,
         'point' => $input['point'],
         'daily_limit' => $input['daily_limit'],
         'approval_required' => $input['approval_required'],
@@ -235,6 +239,8 @@ try {
                     repeat_type = :repeat_type,
                     days_of_week = :days_of_week,
                     day_of_month = :day_of_month,
+                    start_datetime = :start_datetime,
+                    end_datetime = :end_datetime,
                     point = :point,
                     daily_limit = :daily_limit,
                     approval_required = :approval_required,
@@ -249,6 +255,8 @@ try {
         'repeat_type' => $input['repeat_type'],
         'days_of_week' => $days_of_week,
         'day_of_month' => $day_of_month,
+        'start_datetime' => $input['start_datetime'] ?: null,
+        'end_datetime' => $input['end_datetime'] ?: null,
         'point' => $input['point'],
         'daily_limit' => $input['daily_limit'],
         'approval_required' => $input['approval_required'],

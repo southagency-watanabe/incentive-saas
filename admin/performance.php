@@ -15,38 +15,56 @@ requireAdmin();
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 
-<body class="bg-gray-100 min-h-screen">
-  <!-- ヘッダー -->
-  <header class="bg-white shadow">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-800">インセンティブSaaS</h1>
-        <p class="text-sm text-gray-600">実績管理</p>
-      </div>
-      <div class="flex items-center gap-4">
-        <span class="text-gray-700"><?= htmlspecialchars($_SESSION['name']) ?> さん</span>
-        <a href="/api/logout.php" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">ログアウト</a>
+<body class="bg-gray-100 min-h-screen flex">
+  <!-- サイドバー -->
+  <aside class="w-64 bg-white shadow-lg h-screen sticky top-0 flex flex-col">
+    <!-- ロゴ・ヘッダー部分 -->
+    <div class="p-6 border-b">
+      <h1 class="text-xl font-bold text-gray-800">インセンティブSaaS</h1>
+    </div>
+
+    <!-- ナビゲーション -->
+    <nav class="flex-1 overflow-y-auto py-4">
+      <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>ダッシュボード</span>
+      </a>
+      <a href="/admin/masters/members.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>マスタ管理</span>
+      </a>
+      <a href="/admin/sales/input.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>売上管理</span>
+      </a>
+      <a href="/admin/approvals.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>承認管理</span>
+      </a>
+      <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
+        <span class="font-medium">実績管理</span>
+      </a>
+      <a href="/admin/bulletins.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>掲示板管理</span>
+      </a>
+    </nav>
+
+    <!-- ユーザー情報・ログアウト -->
+    <div class="border-t p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-700"><?= htmlspecialchars($_SESSION['name']) ?> さん</span>
+        <a href="/api/logout.php" class="text-sm text-red-600 hover:text-red-700 font-medium">ログアウト</a>
       </div>
     </div>
-  </header>
+  </aside>
 
-  <!-- ナビゲーション -->
-  <nav class="bg-white border-b">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex space-x-8">
-        <a href="/admin/dashboard.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">ダッシュボード</a>
-        <a href="/admin/masters/members.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">マスタ管理</a>
-        <a href="/admin/sales/input.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">売上管理</a>
-        <a href="/admin/approvals.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">承認管理</a>
-        <a href="/admin/performance.php" class="py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">実績管理</a>
-        <a href="/admin/bulletins.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">掲示板管理</a>
-        <a href="/admin/ranking.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">ランキング</a>
+  <!-- メインコンテンツエリア -->
+  <div class="flex-1 overflow-y-auto">
+    <!-- ページヘッダー -->
+    <header class="bg-white shadow-sm border-b">
+      <div class="px-8 py-6">
+        <h2 class="text-2xl font-bold text-gray-800">実績管理</h2>
       </div>
-    </div>
-  </nav>
+    </header>
 
-  <!-- メインコンテンツ -->
-  <main class="max-w-7xl mx-auto px-4 py-8">
+    <!-- メインコンテンツ -->
+    <main class="px-8 py-8">
     <!-- フィルタ -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
       <div class="grid grid-cols-4 gap-4">
@@ -76,29 +94,15 @@ requireAdmin();
       </div>
     </div>
 
-    <!-- グラフセクション -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold text-gray-800">メンバー別売上グラフ</h3>
-        <div class="flex gap-2">
-          <button id="btnApproved" onclick="toggleApprovalFilter('approved')" class="px-4 py-2 rounded bg-blue-600 text-white font-medium">
-            承認済みのみ
-          </button>
-          <button id="btnAll" onclick="toggleApprovalFilter('all')" class="px-4 py-2 rounded bg-gray-200 text-gray-700">
-            全データ
-          </button>
-        </div>
-      </div>
-      <div class="h-96">
-        <canvas id="salesChart"></canvas>
-      </div>
-    </div>
-
     <!-- サマリーカード -->
-    <div class="grid grid-cols-4 gap-6 mb-6">
+    <div class="grid grid-cols-5 gap-4 mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-sm font-medium text-gray-500 mb-2">総売上金額</h3>
         <p class="text-3xl font-bold text-gray-900">¥<span id="totalSales">0</span></p>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-sm font-medium text-gray-500 mb-2">総粗利益</h3>
+        <p class="text-3xl font-bold text-purple-600">¥<span id="totalProfit">0</span></p>
       </div>
       <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-sm font-medium text-gray-500 mb-2">総付与ポイント</h3>
@@ -111,6 +115,37 @@ requireAdmin();
       <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-sm font-medium text-gray-500 mb-2">承認済み率</h3>
         <p class="text-3xl font-bold text-green-600"><span id="approvalRate">0</span>%</p>
+      </div>
+    </div>
+
+    <!-- グラフセクション -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <div class="flex gap-2">
+          <button id="graphTabProductSales" onclick="switchGraphTab('product_sales')" class="px-4 py-2 rounded bg-blue-600 text-white font-medium">
+            商品別売上
+          </button>
+          <button id="graphTabMemberSales" onclick="switchGraphTab('member_sales')" class="px-4 py-2 rounded bg-gray-200 text-gray-700">
+            メンバー別売上
+          </button>
+          <button id="graphTabMemberProfit" onclick="switchGraphTab('member_profit')" class="px-4 py-2 rounded bg-gray-200 text-gray-700">
+            メンバー別粗利益
+          </button>
+          <button id="graphTabProductProfit" onclick="switchGraphTab('product_profit')" class="px-4 py-2 rounded bg-gray-200 text-gray-700">
+            商品別粗利益
+          </button>
+        </div>
+        <div class="flex gap-2">
+          <button id="btnApproved" onclick="toggleApprovalFilter('approved')" class="px-4 py-2 rounded bg-blue-600 text-white font-medium">
+            承認済みのみ
+          </button>
+          <button id="btnAll" onclick="toggleApprovalFilter('all')" class="px-4 py-2 rounded bg-gray-200 text-gray-700">
+            全データ
+          </button>
+        </div>
+      </div>
+      <div class="h-96">
+        <canvas id="salesChart"></canvas>
       </div>
     </div>
 
@@ -164,12 +199,36 @@ requireAdmin();
       </table>
     </div>
 
-  </main>
+    <!-- ランキングセクション -->
+    <div class="mt-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">🏆 ランキング</h2>
+      <div class="grid grid-cols-2 gap-6">
+        <!-- 売上金額ランキング -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">売上金額TOP10</h3>
+          <div id="salesRanking" class="space-y-2">
+            <!-- データはJavaScriptで挿入 -->
+          </div>
+        </div>
+
+        <!-- ポイント獲得ランキング -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">⭐ ポイント獲得TOP10</h3>
+          <div id="pointsRanking" class="space-y-2">
+            <!-- データはJavaScriptで挿入 -->
+          </div>
+        </div>
+      </div>
+    </div>
+    </main>
+  </div>
 
   <script>
     let currentTab = 'members';
     let currentApprovalFilter = 'approved';
+    let currentGraphTab = 'product_sales';
     let salesChart = null;
+    let cachedGraphData = null;
 
     // 初期読み込み
     document.addEventListener('DOMContentLoaded', () => {
@@ -237,7 +296,9 @@ requireAdmin();
           updateSummary(result.summary);
           renderMembersTable(result.members);
           renderProductsTable(result.products);
-          updateChart(result.members);
+          cachedGraphData = result.graphs;
+          updateChartByTab(currentGraphTab);
+          renderRankings(result.rankings);
         } else {
           alert('データの取得に失敗しました。');
         }
@@ -250,6 +311,7 @@ requireAdmin();
     // サマリー更新
     function updateSummary(summary) {
       document.getElementById('totalSales').textContent = summary.total_sales.toLocaleString();
+      document.getElementById('totalProfit').textContent = summary.total_profit.toLocaleString();
       document.getElementById('totalPoints').textContent = summary.total_points.toLocaleString();
       document.getElementById('totalCount').textContent = summary.total_count.toLocaleString();
       document.getElementById('approvalRate').textContent = summary.approval_rate.toFixed(1);
@@ -348,22 +410,78 @@ requireAdmin();
       });
     }
 
-    // グラフ更新
-    function updateChart(members) {
-      if (!salesChart) return;
+    // グラフタブ切り替え
+    function switchGraphTab(tab) {
+      currentGraphTab = tab;
 
-      // 売上金額が多い順にソート
-      const sortedMembers = [...members].sort((a, b) => b.total_sales - a.total_sales);
+      // タブボタンのスタイル更新
+      ['ProductSales', 'MemberSales', 'MemberProfit', 'ProductProfit'].forEach(t => {
+        const btn = document.getElementById(`graphTab${t}`);
+        const tabKey = t.charAt(0).toLowerCase() + t.slice(1).replace(/([A-Z])/g, '_$1').toLowerCase();
+        const isActive = tabKey === tab;
+        btn.classList.toggle('bg-blue-600', isActive);
+        btn.classList.toggle('text-white', isActive);
+        btn.classList.toggle('font-medium', isActive);
+        btn.classList.toggle('bg-gray-200', !isActive);
+        btn.classList.toggle('text-gray-700', !isActive);
+      });
 
-      // TOP10のみ表示
-      const top10 = sortedMembers.slice(0, 10);
+      // グラフ更新
+      updateChartByTab(tab);
+    }
 
-      const labels = top10.map(m => m.member_name);
-      const data = top10.map(m => parseFloat(m.total_sales));
+    // グラフタブに応じてグラフを更新
+    function updateChartByTab(tab) {
+      if (!salesChart || !cachedGraphData) return;
+
+      const data = cachedGraphData[tab] || [];
+      const labels = data.map(d => d.label);
+      const values = data.map(d => d.value);
+
+      // グラフタイトルとラベルを変更
+      let chartLabel = '';
+      let yAxisLabel = '';
+      let valuePrefix = '';
+
+      switch(tab) {
+        case 'product_sales':
+          chartLabel = '商品別売上';
+          valuePrefix = '¥';
+          break;
+        case 'member_sales':
+          chartLabel = 'メンバー別売上';
+          valuePrefix = '¥';
+          break;
+        case 'member_profit':
+          chartLabel = 'メンバー別粗利益';
+          valuePrefix = '¥';
+          break;
+        case 'product_profit':
+          chartLabel = '商品別粗利益';
+          valuePrefix = '¥';
+          break;
+      }
 
       salesChart.data.labels = labels;
-      salesChart.data.datasets[0].data = data;
+      salesChart.data.datasets[0].label = chartLabel;
+      salesChart.data.datasets[0].data = values;
+
+      // Y軸のフォーマット更新
+      salesChart.options.scales.y.ticks.callback = function(value) {
+        return valuePrefix + value.toLocaleString();
+      };
+
+      // ツールチップのフォーマット更新
+      salesChart.options.plugins.tooltip.callbacks.label = function(context) {
+        return chartLabel + ': ' + valuePrefix + context.parsed.y.toLocaleString();
+      };
+
       salesChart.update();
+    }
+
+    // グラフ更新（後方互換性のため残す）
+    function updateChart(members) {
+      updateChartByTab(currentGraphTab);
     }
 
     // 承認フィルタ切り替え
@@ -384,6 +502,51 @@ requireAdmin();
 
       // データ再読み込み
       loadPerformance();
+    }
+
+    // ランキング描画
+    function renderRankings(rankings) {
+      // 売上金額ランキング
+      const salesRanking = document.getElementById('salesRanking');
+      salesRanking.innerHTML = '';
+
+      if (rankings.sales.length === 0) {
+        salesRanking.innerHTML = '<p class="text-gray-500 text-center py-4">データがありません</p>';
+      } else {
+        rankings.sales.forEach((member, index) => {
+          const div = document.createElement('div');
+          div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded';
+          div.innerHTML = `
+            <div class="flex items-center gap-3">
+              <span class="text-lg font-bold ${index < 3 ? 'text-yellow-500' : 'text-gray-500'}">${index + 1}</span>
+              <span class="font-medium">${escapeHtml(member.member_name)}</span>
+            </div>
+            <span class="font-bold text-gray-900">¥${parseFloat(member.total_sales).toLocaleString()}</span>
+          `;
+          salesRanking.appendChild(div);
+        });
+      }
+
+      // ポイント獲得ランキング
+      const pointsRanking = document.getElementById('pointsRanking');
+      pointsRanking.innerHTML = '';
+
+      if (rankings.points.length === 0) {
+        pointsRanking.innerHTML = '<p class="text-gray-500 text-center py-4">データがありません</p>';
+      } else {
+        rankings.points.forEach((member, index) => {
+          const div = document.createElement('div');
+          div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded';
+          div.innerHTML = `
+            <div class="flex items-center gap-3">
+              <span class="text-lg font-bold ${index < 3 ? 'text-yellow-500' : 'text-gray-500'}">${index + 1}</span>
+              <span class="font-medium">${escapeHtml(member.member_name)}</span>
+            </div>
+            <span class="font-bold text-blue-600">${member.final_points}pt</span>
+          `;
+          pointsRanking.appendChild(div);
+        });
+      }
     }
 
     // HTMLエスケープ

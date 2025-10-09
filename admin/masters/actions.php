@@ -14,54 +14,72 @@ requireAdmin();
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 min-h-screen">
-  <!-- ヘッダー -->
-  <header class="bg-white shadow">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-800">インセンティブSaaS</h1>
-        <p class="text-sm text-gray-600">アクションマスタ</p>
-      </div>
-      <div class="flex items-center gap-4">
-        <span class="text-gray-700"><?= htmlspecialchars($_SESSION['name']) ?> さん</span>
-        <a href="/api/logout.php" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">ログアウト</a>
-      </div>
+<body class="bg-gray-100 min-h-screen flex">
+  <!-- サイドバー -->
+  <aside class="w-64 bg-white shadow-lg h-screen sticky top-0 flex flex-col">
+    <!-- ロゴ・ヘッダー部分 -->
+    <div class="p-6 border-b">
+      <h1 class="text-xl font-bold text-gray-800">インセンティブSaaS</h1>
     </div>
-  </header>
 
-  <!-- ナビゲーション -->
-  <nav class="bg-white border-b">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex space-x-8">
-        <a href="/admin/dashboard.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">ダッシュボード</a>
-        <a href="/admin/masters/members.php" class="py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">マスタ管理</a>
-        <a href="/admin/sales/input.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">売上管理</a>
-        <a href="/admin/approvals.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">承認管理</a>
-        <a href="#" class="py-4 px-2 text-gray-600 hover:text-gray-900">実績管理</a>
-        <a href="/admin/bulletins.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">掲示板管理</a>
-        <a href="/admin/ranking.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">ランキング</a>
-      </div>
-    </div>
-  </nav>
+    <!-- ナビゲーション -->
+    <nav class="flex-1 overflow-y-auto py-4">
+      <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>ダッシュボード</span>
+      </a>
+      <a href="/admin/masters/members.php" class="flex items-center px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
+        <span class="font-medium">マスタ管理</span>
+      </a>
+      <a href="/admin/sales/input.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>売上管理</span>
+      </a>
+      <a href="/admin/approvals.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>承認管理</span>
+      </a>
+      <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>実績管理</span>
+      </a>
+      <a href="/admin/bulletins.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>掲示板管理</span>
+      </a>
+    </nav>
 
-  <!-- サブナビゲーション（マスタ切り替え） -->
-  <div class="bg-gray-50 border-b">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex space-x-6">
-        <a href="/admin/masters/members.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">メンバー</a>
-        <a href="/admin/masters/teams.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">チーム</a>
-        <a href="/admin/masters/products.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">商品</a>
-        <a href="/admin/masters/actions.php" class="py-3 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">アクション</a>
-        <a href="/admin/masters/tasks.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">タスク</a>
-        <a href="/admin/masters/events.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">イベント</a>
+    <!-- ユーザー情報・ログアウト -->
+    <div class="border-t p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-700"><?= htmlspecialchars($_SESSION['name']) ?> さん</span>
+        <a href="/api/logout.php" class="text-sm text-red-600 hover:text-red-700 font-medium">ログアウト</a>
       </div>
     </div>
-  </div>
-  <!-- メインコンテンツ -->
-  <main class="max-w-7xl mx-auto px-4 py-8">
-    <!-- ヘッダーアクション -->
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold text-gray-800">アクション一覧</h2>
+  </aside>
+
+  <!-- メインコンテンツエリア -->
+  <div class="flex-1 overflow-y-auto">
+    <!-- ページヘッダー -->
+    <header class="bg-white shadow-sm border-b">
+      <div class="px-8 py-6">
+        <h2 class="text-2xl font-bold text-gray-800">アクションマスタ</h2>
+      </div>
+      <!-- サブナビゲーション（マスタ切り替え） -->
+      <div class="bg-gray-50 border-t">
+        <div class="px-8">
+          <div class="flex space-x-6">
+            <a href="/admin/masters/members.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">メンバー</a>
+            <a href="/admin/masters/teams.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">チーム</a>
+            <a href="/admin/masters/products.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">商品</a>
+            <a href="/admin/masters/actions.php" class="py-3 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">アクション</a>
+            <a href="/admin/masters/tasks.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">タスク</a>
+            <a href="/admin/masters/events.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">イベント</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="px-8 py-8">
+      <!-- ヘッダーアクション -->
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-800">アクション一覧</h3>
       <div class="flex gap-3">
         <button id="refreshBtn" onclick="refreshList()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center gap-2">
           <span id="refreshIcon">🔄</span>
@@ -109,6 +127,67 @@ requireAdmin();
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">アクション名 <span class="text-red-500">*</span></label>
           <input type="text" id="actionName" name="action_name" required placeholder="例：Google口コミ獲得" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- 繰り返し設定 -->
+        <div class="grid grid-cols-4 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">繰り返し <span class="text-red-500">*</span></label>
+            <select id="repeatType" name="repeat_type" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+              <option value="単発">単発</option>
+              <option value="毎週">毎週</option>
+              <option value="毎月">毎月</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">開始日 <span class="text-red-500">*</span></label>
+            <input type="date" id="startDate" name="start_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">終了日 <span class="text-red-500">*</span></label>
+            <input type="date" id="endDate" name="end_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <!-- 曜日選択（毎週の場合） -->
+        <div id="daysOfWeekContainer" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 mb-2">曜日 <span class="text-red-500">*</span></label>
+          <div class="grid grid-cols-4 gap-2">
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" name="days_of_week[]" value="月" class="rounded">
+              <span>月</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" name="days_of_week[]" value="火" class="rounded">
+              <span>火</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" name="days_of_week[]" value="水" class="rounded">
+              <span>水</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" name="days_of_week[]" value="木" class="rounded">
+              <span>木</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" name="days_of_week[]" value="金" class="rounded">
+              <span>金</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" name="days_of_week[]" value="土" class="rounded">
+              <span>土</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" name="days_of_week[]" value="日" class="rounded">
+              <span>日</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 毎月日（毎月の場合） -->
+        <div id="dayOfMonthContainer" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 mb-1">毎月日 <span class="text-red-500">*</span></label>
+          <input type="text" id="dayOfMonth" name="day_of_month" placeholder="例：29 (月末は99)" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -172,7 +251,27 @@ requireAdmin();
     // 初期読み込み
     document.addEventListener('DOMContentLoaded', () => {
       loadActions();
+      setupRepeatTypeToggle();
     });
+
+    // 繰り返し設定の切り替え
+    function setupRepeatTypeToggle() {
+      const repeatType = document.getElementById('repeatType');
+      const daysOfWeekContainer = document.getElementById('daysOfWeekContainer');
+      const dayOfMonthContainer = document.getElementById('dayOfMonthContainer');
+
+      repeatType.addEventListener('change', (e) => {
+        const value = e.target.value;
+        daysOfWeekContainer.classList.add('hidden');
+        dayOfMonthContainer.classList.add('hidden');
+
+        if (value === '毎週') {
+          daysOfWeekContainer.classList.remove('hidden');
+        } else if (value === '毎月') {
+          dayOfMonthContainer.classList.remove('hidden');
+        }
+      });
+    }
 
     // アクション一覧取得
     async function loadActions(showLoading = false) {
@@ -257,18 +356,44 @@ requireAdmin();
 
       form.reset();
 
+      // チェックボックスクリア
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+      // コンテナ非表示
+      document.getElementById('daysOfWeekContainer').classList.add('hidden');
+      document.getElementById('dayOfMonthContainer').classList.add('hidden');
+
       if (mode === 'create') {
         title.textContent = 'アクション登録';
         document.getElementById('approvalRequired').value = '必要';
+        document.getElementById('repeatType').value = '単発';
       } else {
         title.textContent = 'アクション編集';
         document.getElementById('actionId').value = data.action_id;
         document.getElementById('actionName').value = data.action_name;
+        document.getElementById('repeatType').value = data.repeat_type || '単発';
+        document.getElementById('startDate').value = data.start_date || '';
+        document.getElementById('endDate').value = data.end_date || '';
         document.getElementById('target').value = data.target;
         document.getElementById('point').value = data.point;
         document.getElementById('approvalRequired').value = data.approval_required;
         document.getElementById('status').value = data.status;
         document.getElementById('description').value = data.description || '';
+
+        // 繰り返し設定
+        if (data.repeat_type === '毎週') {
+          document.getElementById('daysOfWeekContainer').classList.remove('hidden');
+          if (data.days_of_week) {
+            const days = data.days_of_week.split(',');
+            days.forEach(day => {
+              const checkbox = document.querySelector(`input[name="days_of_week[]"][value="${day}"]`);
+              if (checkbox) checkbox.checked = true;
+            });
+          }
+        } else if (data.repeat_type === '毎月') {
+          document.getElementById('dayOfMonthContainer').classList.remove('hidden');
+          document.getElementById('dayOfMonth').value = data.day_of_month || '';
+        }
       }
 
       modal.classList.remove('hidden');
@@ -284,8 +409,34 @@ requireAdmin();
       e.preventDefault();
 
       const formData = new FormData(e.target);
+      const repeatType = formData.get('repeat_type');
+
+      let daysOfWeek = null;
+      let dayOfMonth = null;
+
+      // 繰り返し設定
+      if (repeatType === '毎週') {
+        const selectedDays = formData.getAll('days_of_week[]');
+        if (selectedDays.length === 0) {
+          alert('曜日を選択してください。');
+          return;
+        }
+        daysOfWeek = selectedDays.join(',');
+      } else if (repeatType === '毎月') {
+        dayOfMonth = formData.get('day_of_month');
+        if (!dayOfMonth) {
+          alert('毎月日を入力してください。');
+          return;
+        }
+      }
+
       const data = {
         action_name: formData.get('action_name'),
+        repeat_type: repeatType,
+        start_date: formData.get('start_date'),
+        end_date: formData.get('end_date'),
+        days_of_week: daysOfWeek,
+        day_of_month: dayOfMonth,
         target: formData.get('target'),
         point: formData.get('point'),
         approval_required: formData.get('approval_required'),
@@ -395,6 +546,8 @@ requireAdmin();
       return div.innerHTML;
     }
   </script>
+    </main>
+  </div>
 </body>
 
 </html>

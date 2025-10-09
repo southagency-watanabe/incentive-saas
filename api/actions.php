@@ -16,9 +16,14 @@ try {
     case 'GET':
       // 一覧取得
       $stmt = $pdo->prepare("
-                SELECT 
+                SELECT
                     action_id,
                     action_name,
+                    repeat_type,
+                    start_date,
+                    end_date,
+                    days_of_week,
+                    day_of_month,
                     target,
                     status,
                     description,
@@ -45,7 +50,7 @@ try {
       $input = json_decode(file_get_contents('php://input'), true);
 
       // バリデーション
-      if (empty($input['action_name']) || empty($input['target']) || !isset($input['point']) || empty($input['status']) || empty($input['approval_required'])) {
+      if (empty($input['action_name']) || empty($input['repeat_type']) || empty($input['start_date']) || empty($input['end_date']) || empty($input['target']) || !isset($input['point']) || empty($input['status']) || empty($input['approval_required'])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => '必須項目が入力されていません。']);
         exit;
@@ -85,10 +90,12 @@ try {
       // 登録
       $stmt = $pdo->prepare("
                 INSERT INTO actions (
-                    action_id, tenant_id, action_name, target, status,
+                    action_id, tenant_id, action_name, repeat_type, start_date, end_date,
+                    days_of_week, day_of_month, target, status,
                     description, point, approval_required
                 ) VALUES (
-                    :action_id, :tenant_id, :action_name, :target, :status,
+                    :action_id, :tenant_id, :action_name, :repeat_type, :start_date, :end_date,
+                    :days_of_week, :day_of_month, :target, :status,
                     :description, :point, :approval_required
                 )
             ");
@@ -97,6 +104,11 @@ try {
         'action_id' => $action_id,
         'tenant_id' => $tenant_id,
         'action_name' => $input['action_name'],
+        'repeat_type' => $input['repeat_type'],
+        'start_date' => $input['start_date'],
+        'end_date' => $input['end_date'],
+        'days_of_week' => $input['days_of_week'] ?? null,
+        'day_of_month' => $input['day_of_month'] ?? null,
         'target' => $input['target'],
         'status' => $input['status'],
         'description' => $input['description'] ?? null,
@@ -137,7 +149,7 @@ try {
       $action_id = $_GET['id'];
 
       // バリデーション
-      if (empty($input['action_name']) || empty($input['target']) || !isset($input['point']) || empty($input['status']) || empty($input['approval_required'])) {
+      if (empty($input['action_name']) || empty($input['repeat_type']) || empty($input['start_date']) || empty($input['end_date']) || empty($input['target']) || !isset($input['point']) || empty($input['status']) || empty($input['approval_required'])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => '必須項目が入力されていません。']);
         exit;
@@ -161,6 +173,11 @@ try {
       $stmt = $pdo->prepare("
                 UPDATE actions SET
                     action_name = :action_name,
+                    repeat_type = :repeat_type,
+                    start_date = :start_date,
+                    end_date = :end_date,
+                    days_of_week = :days_of_week,
+                    day_of_month = :day_of_month,
                     target = :target,
                     status = :status,
                     description = :description,
@@ -171,6 +188,11 @@ try {
 
       $stmt->execute([
         'action_name' => $input['action_name'],
+        'repeat_type' => $input['repeat_type'],
+        'start_date' => $input['start_date'],
+        'end_date' => $input['end_date'],
+        'days_of_week' => $input['days_of_week'] ?? null,
+        'day_of_month' => $input['day_of_month'] ?? null,
         'target' => $input['target'],
         'status' => $input['status'],
         'description' => $input['description'] ?? null,

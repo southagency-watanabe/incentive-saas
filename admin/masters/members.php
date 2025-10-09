@@ -26,55 +26,72 @@ $teams = $stmt->fetchAll();
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 min-h-screen">
-  <!-- ヘッダー -->
-  <header class="bg-white shadow">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-800">インセンティブSaaS</h1>
-        <p class="text-sm text-gray-600">メンバーマスタ</p>
-      </div>
-      <div class="flex items-center gap-4">
-        <span class="text-gray-700"><?= htmlspecialchars($_SESSION['name']) ?> さん</span>
-        <a href="/api/logout.php" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">ログアウト</a>
+<body class="bg-gray-100 min-h-screen flex">
+  <!-- サイドバー -->
+  <aside class="w-64 bg-white shadow-lg h-screen sticky top-0 flex flex-col">
+    <!-- ロゴ・ヘッダー部分 -->
+    <div class="p-6 border-b">
+      <h1 class="text-xl font-bold text-gray-800">インセンティブSaaS</h1>
+    </div>
+
+    <!-- ナビゲーション -->
+    <nav class="flex-1 overflow-y-auto py-4">
+      <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>ダッシュボード</span>
+      </a>
+      <a href="/admin/masters/members.php" class="flex items-center px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
+        <span class="font-medium">マスタ管理</span>
+      </a>
+      <a href="/admin/sales/input.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>売上管理</span>
+      </a>
+      <a href="/admin/approvals.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>承認管理</span>
+      </a>
+      <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>実績管理</span>
+      </a>
+      <a href="/admin/bulletins.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>掲示板管理</span>
+      </a>
+    </nav>
+
+    <!-- ユーザー情報・ログアウト -->
+    <div class="border-t p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-700"><?= htmlspecialchars($_SESSION['name']) ?> さん</span>
+        <a href="/api/logout.php" class="text-sm text-red-600 hover:text-red-700 font-medium">ログアウト</a>
       </div>
     </div>
-  </header>
+  </aside>
 
-  <!-- ナビゲーション -->
-  <nav class="bg-white border-b">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex space-x-8">
-        <a href="/admin/dashboard.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">ダッシュボード</a>
-        <a href="/admin/masters/members.php" class="py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">マスタ管理</a>
-        <a href="/admin/sales/input.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">売上管理</a>
-        <a href="/admin/approvals.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">承認管理</a>
-        <a href="/admin/performance.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">実績管理</a>
-        <a href="/admin/bulletins.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">掲示板管理</a>
-        <a href="/admin/ranking.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">ランキング</a>
+  <!-- メインコンテンツエリア -->
+  <div class="flex-1 overflow-y-auto">
+    <!-- ページヘッダー -->
+    <header class="bg-white shadow-sm border-b">
+      <div class="px-8 py-6">
+        <h2 class="text-2xl font-bold text-gray-800">メンバーマスタ</h2>
       </div>
-    </div>
-  </nav>
-
-  <!-- サブナビゲーション（マスタ切り替え） -->
-  <div class="bg-gray-50 border-b">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex space-x-6">
-        <a href="/admin/masters/members.php" class="py-3 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">メンバー</a>
-        <a href="/admin/masters/teams.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">チーム</a>
-        <a href="/admin/masters/products.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">商品</a>
-        <a href="/admin/masters/actions.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">アクション</a>
-        <a href="/admin/masters/tasks.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">タスク</a>
-        <a href="/admin/masters/events.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">イベント</a>
+      <!-- サブナビゲーション（マスタ切り替え） -->
+      <div class="bg-gray-50 border-t">
+        <div class="px-8">
+          <div class="flex space-x-6">
+            <a href="/admin/masters/members.php" class="py-3 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">メンバー</a>
+            <a href="/admin/masters/teams.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">チーム</a>
+            <a href="/admin/masters/products.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">商品</a>
+            <a href="/admin/masters/actions.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">アクション</a>
+            <a href="/admin/masters/tasks.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">タスク</a>
+            <a href="/admin/masters/events.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">イベント</a>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+    </header>
 
-  <!-- メインコンテンツ -->
-  <main class="max-w-7xl mx-auto px-4 py-8">
-    <!-- ヘッダーアクション -->
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold text-gray-800">メンバー一覧</h2>
+    <!-- メインコンテンツ -->
+    <main class="px-8 py-8">
+      <!-- ヘッダーアクション -->
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-800">メンバー一覧</h3>
       <div class="flex gap-3">
         <button id="refreshBtn" onclick="refreshList()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center gap-2">
           <span id="refreshIcon">🔄</span>
@@ -456,6 +473,8 @@ $teams = $stmt->fetchAll();
       return div.innerHTML;
     }
   </script>
+    </main>
+  </div>
 </body>
 
 </html>

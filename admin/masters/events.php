@@ -26,55 +26,72 @@ $actions = $stmt->fetchAll();
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 min-h-screen">
-  <!-- ヘッダー -->
-  <header class="bg-white shadow">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-800">インセンティブSaaS</h1>
-        <p class="text-sm text-gray-600">イベントマスタ</p>
-      </div>
-      <div class="flex items-center gap-4">
-        <span class="text-gray-700"><?= htmlspecialchars($_SESSION['name']) ?> さん</span>
-        <a href="/api/logout.php" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">ログアウト</a>
+<body class="bg-gray-100 min-h-screen flex">
+  <!-- サイドバー -->
+  <aside class="w-64 bg-white shadow-lg h-screen sticky top-0 flex flex-col">
+    <!-- ロゴ・ヘッダー部分 -->
+    <div class="p-6 border-b">
+      <h1 class="text-xl font-bold text-gray-800">インセンティブSaaS</h1>
+    </div>
+
+    <!-- ナビゲーション -->
+    <nav class="flex-1 overflow-y-auto py-4">
+      <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>ダッシュボード</span>
+      </a>
+      <a href="/admin/masters/members.php" class="flex items-center px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
+        <span class="font-medium">マスタ管理</span>
+      </a>
+      <a href="/admin/sales/input.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>売上管理</span>
+      </a>
+      <a href="/admin/approvals.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>承認管理</span>
+      </a>
+      <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>実績管理</span>
+      </a>
+      <a href="/admin/bulletins.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>掲示板管理</span>
+      </a>
+    </nav>
+
+    <!-- ユーザー情報・ログアウト -->
+    <div class="border-t p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-700"><?= htmlspecialchars($_SESSION['name']) ?> さん</span>
+        <a href="/api/logout.php" class="text-sm text-red-600 hover:text-red-700 font-medium">ログアウト</a>
       </div>
     </div>
-  </header>
+  </aside>
 
-  <!-- ナビゲーション -->
-  <nav class="bg-white border-b">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex space-x-8">
-        <a href="/admin/dashboard.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">ダッシュボード</a>
-        <a href="/admin/masters/members.php" class="py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">マスタ管理</a>
-        <a href="/admin/sales/input.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">売上管理</a>
-        <a href="/admin/approvals.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">承認管理</a>
-        <a href="/admin/performance.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">実績管理</a>
-        <a href="/admin/bulletins.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">掲示板管理</a>
-        <a href="/admin/ranking.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">ランキング</a>
+  <!-- メインコンテンツエリア -->
+  <div class="flex-1 overflow-y-auto">
+    <!-- ページヘッダー -->
+    <header class="bg-white shadow-sm border-b">
+      <div class="px-8 py-6">
+        <h2 class="text-2xl font-bold text-gray-800">イベントマスタ</h2>
       </div>
-    </div>
-  </nav>
-
-  <!-- サブナビゲーション（マスタ切り替え） -->
-  <div class="bg-gray-50 border-b">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex space-x-6">
-        <a href="/admin/masters/members.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">メンバー</a>
-        <a href="/admin/masters/teams.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">チーム</a>
-        <a href="/admin/masters/products.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">商品</a>
-        <a href="/admin/masters/actions.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">アクション</a>
-        <a href="/admin/masters/tasks.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">タスク</a>
-        <a href="/admin/masters/events.php" class="py-3 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">イベント</a>
+      <!-- サブナビゲーション（マスタ切り替え） -->
+      <div class="bg-gray-50 border-t">
+        <div class="px-8">
+          <div class="flex space-x-6">
+            <a href="/admin/masters/members.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">メンバー</a>
+            <a href="/admin/masters/teams.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">チーム</a>
+            <a href="/admin/masters/products.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">商品</a>
+            <a href="/admin/masters/actions.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">アクション</a>
+            <a href="/admin/masters/tasks.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">タスク</a>
+            <a href="/admin/masters/events.php" class="py-3 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">イベント</a>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+    </header>
 
-  <!-- メインコンテンツ -->
-  <main class="max-w-7xl mx-auto px-4 py-8">
-    <!-- ヘッダーアクション -->
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold text-gray-800">イベント一覧</h2>
+    <!-- メインコンテンツ -->
+    <main class="px-8 py-8">
+      <!-- ヘッダーアクション -->
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-800">イベント一覧</h3>
       <div class="flex gap-3">
         <button id="refreshBtn" onclick="refreshList()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center gap-2">
           <span id="refreshIcon">🔄</span>
@@ -137,16 +154,16 @@ $actions = $stmt->fetchAll();
             </select>
           </div>
 
-          <!-- 開始日 -->
+          <!-- 開始日時 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">開始日 <span class="text-red-500">*</span></label>
-            <input type="date" id="startDate" name="start_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            <label class="block text-sm font-medium text-gray-700 mb-1">開始日時 <span class="text-red-500">*</span></label>
+            <input type="datetime-local" id="startDate" name="start_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
           </div>
 
-          <!-- 終了日 -->
+          <!-- 終了日時 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">終了日 <span class="text-red-500">*</span></label>
-            <input type="date" id="endDate" name="end_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            <label class="block text-sm font-medium text-gray-700 mb-1">終了日時 <span class="text-red-500">*</span></label>
+            <input type="datetime-local" id="endDate" name="end_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
           </div>
         </div>
 
@@ -265,6 +282,11 @@ $actions = $stmt->fetchAll();
           </label>
 
           <div id="noticeContainer" class="hidden space-y-3 pl-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">告知公開日時</label>
+              <input type="datetime-local" id="noticePublishAt" name="notice_publish_at" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+              <p class="text-sm text-gray-500 mt-1">未指定の場合は即時公開されます</p>
+            </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">告知タイトル</label>
               <input type="text" id="noticeTitle" name="notice_title" placeholder="例：肉の日キャンペーン開催！" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
@@ -447,8 +469,9 @@ $actions = $stmt->fetchAll();
         document.getElementById('eventId').value = data.event_id;
         document.getElementById('eventName').value = data.event_name;
         document.getElementById('repeatType').value = data.repeat_type;
-        document.getElementById('startDate').value = data.start_date;
-        document.getElementById('endDate').value = data.end_date;
+        // 日付のみのデータをdatetime-local形式に変換（00:00:00で初期化）
+        document.getElementById('startDate').value = data.start_date ? data.start_date + 'T00:00' : '';
+        document.getElementById('endDate').value = data.end_date ? data.end_date + 'T23:59' : '';
         document.getElementById('targetType').value = data.target_type;
         document.getElementById('multiplier').value = data.multiplier;
         document.getElementById('status').value = data.status;
@@ -494,6 +517,7 @@ $actions = $stmt->fetchAll();
         if (data.publish_notice) {
           document.getElementById('publishNotice').checked = true;
           document.getElementById('noticeContainer').classList.remove('hidden');
+          document.getElementById('noticePublishAt').value = data.notice_publish_at || '';
           document.getElementById('noticeTitle').value = data.notice_title || '';
           document.getElementById('noticeBody').value = data.notice_body || '';
         }
@@ -505,6 +529,52 @@ $actions = $stmt->fetchAll();
     // モーダル閉じる
     function closeModal() {
       document.getElementById('modal').classList.add('hidden');
+    }
+
+    // 期間重複チェック
+    async function checkEventOverlap(startDate, endDate, currentEventId) {
+      try {
+        const response = await fetch('/api/events.php');
+        const result = await response.json();
+
+        if (!result.success) {
+          return null;
+        }
+
+        const newStart = new Date(startDate);
+        const newEnd = new Date(endDate);
+        const overlappingEvents = [];
+
+        for (const event of result.data) {
+          // 編集中のイベント自身は除外
+          if (currentEventId && event.event_id === currentEventId) {
+            continue;
+          }
+
+          // 無効なイベントはスキップ
+          if (event.status !== '有効') {
+            continue;
+          }
+
+          const eventStart = new Date(event.start_date);
+          const eventEnd = new Date(event.end_date);
+
+          // 期間が重複しているかチェック
+          if ((newStart <= eventEnd) && (newEnd >= eventStart)) {
+            overlappingEvents.push(event);
+          }
+        }
+
+        if (overlappingEvents.length > 0) {
+          const names = overlappingEvents.map(e => `「${e.event_name}」(${e.start_date}〜${e.end_date})`).join('\n');
+          return `⚠️ 以下のイベントと期間が重複しています：\n\n${names}`;
+        }
+
+        return null;
+      } catch (error) {
+        console.error('Overlap check error:', error);
+        return null;
+      }
     }
 
     // フォーム送信
@@ -552,11 +622,26 @@ $actions = $stmt->fetchAll();
         targetIds = selectedActions.join(',');
       }
 
+      // datetime-local形式の値をdate形式に変換
+      const startDateTime = formData.get('start_date');
+      const endDateTime = formData.get('end_date');
+      const startDate = startDateTime ? startDateTime.split('T')[0] : '';
+      const endDate = endDateTime ? endDateTime.split('T')[0] : '';
+
+      // 期間重複チェック
+      const currentEventId = currentMode === 'edit' ? document.getElementById('eventId').value : null;
+      const overlapWarning = await checkEventOverlap(startDate, endDate, currentEventId);
+      if (overlapWarning) {
+        if (!confirm(overlapWarning + '\n\nこのまま登録しますか？')) {
+          return;
+        }
+      }
+
       const data = {
         event_name: formData.get('event_name'),
         repeat_type: repeatType,
-        start_date: formData.get('start_date'),
-        end_date: formData.get('end_date'),
+        start_date: startDate,
+        end_date: endDate,
         days_of_week: daysOfWeek,
         day_of_month: dayOfMonth,
         target_type: targetType,
@@ -565,6 +650,7 @@ $actions = $stmt->fetchAll();
         status: formData.get('status'),
         description: formData.get('description'),
         publish_notice: formData.get('publish_notice') ? true : false,
+        notice_publish_at: formData.get('notice_publish_at'),
         notice_title: formData.get('notice_title'),
         notice_body: formData.get('notice_body')
       };
@@ -671,6 +757,8 @@ $actions = $stmt->fetchAll();
       return div.innerHTML;
     }
   </script>
+    </main>
+  </div>
 </body>
 
 </html>
