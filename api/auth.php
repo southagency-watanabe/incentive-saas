@@ -47,9 +47,17 @@ try {
 
   $member = $stmt->fetch();
 
+  // デバッグ用: クエリ結果を確認
+  error_log('Query result: ' . json_encode($member));
+  error_log('Row count: ' . $stmt->rowCount());
+  
   // ユーザーが存在しない、またはステータスが無効
   if (!$member || $member['status'] !== '有効') {
-    echo json_encode(['success' => false, 'message' => '認証に失敗しました。']);
+    echo json_encode(['success' => false, 'message' => '認証に失敗しました。', 'debug' => [
+      'member_found' => $member ? 'yes' : 'no',
+      'member_status' => $member ? $member['status'] : 'null',
+      'row_count' => $stmt->rowCount()
+    ]]);
     exit;
   }
 

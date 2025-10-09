@@ -21,7 +21,7 @@ try {
       $filter = $_GET['filter'] ?? 'all';
 
       $sql = "
-                SELECT 
+                SELECT
                     sr.id,
                     sr.date,
                     sr.member_id,
@@ -33,6 +33,8 @@ try {
                     sr.base_point,
                     sr.event_multiplier,
                     sr.final_point,
+                    sr.applied_event_id,
+                    sr.applied_event_name,
                     sr.note,
                     sr.approval_status,
                     sr.approver,
@@ -131,10 +133,13 @@ try {
 
       // イベント倍率計算（該当する有効イベントの最大倍率）
       $event_multiplier = 1.0;
+      $applied_event_id = null;
+      $applied_event_name = null;
 
       // 有効なイベントを全て取得
       $stmt = $pdo->prepare("
-                SELECT event_id, target_type, target_ids, multiplier
+                SELECT event_id, event_name, repeat_type, days_of_week, day_of_month,
+                       target_type, target_ids, multiplier
                 FROM events
                 WHERE tenant_id = :tenant_id
                 AND status = '有効'
@@ -148,10 +153,68 @@ try {
       ]);
       $events = $stmt->fetchAll();
 
+      // 売上日のタイムスタンプと曜日を取得
+      $sale_timestamp = strtotime($input['date']);
+      $sale_day_of_week = date('w', $sale_timestamp); // 0(日曜)～6(土曜)
+      $sale_day_of_month = date('j', $sale_timestamp); // 1～31
+      $last_day_of_month = date('t', $sale_timestamp); // その月の最終日
+
+      // 曜日変換マップ（文字→数値）
+      $day_name_to_number = [
+        '日' => '0',
+        '月' => '1',
+        '火' => '2',
+        '水' => '3',
+        '木' => '4',
+        '金' => '5',
+        '土' => '6'
+      ];
+
       // 各イベントをチェック
       foreach ($events as $event) {
         $is_applicable = false;
 
+        // 繰り返し条件の判定
+        $repeat_matches = false;
+        switch ($event['repeat_type']) {
+          case '単発':
+            $repeat_matches = true; // 期間内ならすべて対象
+            break;
+
+          case '毎週':
+            // 曜日が一致するかチェック
+            if (!empty($event['days_of_week'])) {
+              $target_days = explode(',', $event['days_of_week']);
+              // 曜日文字を数値に変換
+              $target_day_numbers = [];
+              foreach ($target_days as $day_name) {
+                if (isset($day_name_to_number[$day_name])) {
+                  $target_day_numbers[] = $day_name_to_number[$day_name];
+                }
+              }
+              $repeat_matches = in_array((string)$sale_day_of_week, $target_day_numbers);
+            }
+            break;
+
+          case '毎月':
+            // 日付が一致するかチェック
+            if (!empty($event['day_of_month'])) {
+              if ($event['day_of_month'] == 99) {
+                // 99は末日を表す
+                $repeat_matches = ($sale_day_of_month == $last_day_of_month);
+              } else {
+                $repeat_matches = ($sale_day_of_month == $event['day_of_month']);
+              }
+            }
+            break;
+        }
+
+        // 繰り返し条件を満たさない場合はスキップ
+        if (!$repeat_matches) {
+          continue;
+        }
+
+        // 対象商品の判定
         if ($event['target_type'] === '全商品') {
           $is_applicable = true;
         } elseif ($event['target_type'] === '特定商品' && !empty($event['target_ids'])) {
@@ -160,10 +223,13 @@ try {
             $is_applicable = true;
           }
         }
+        // '全アクション'、'特定アクション'は商品には適用しない
 
         // 該当するイベントの中で最大倍率を適用
         if ($is_applicable && $event['multiplier'] > $event_multiplier) {
           $event_multiplier = $event['multiplier'];
+          $applied_event_id = $event['event_id'];
+          $applied_event_name = $event['event_name'];
         }
       }
 
@@ -181,10 +247,12 @@ try {
                 INSERT INTO sales_records (
                     tenant_id, date, member_id, product_id, quantity,
                     unit_price, base_point, event_multiplier, final_point,
+                    applied_event_id, applied_event_name,
                     note, approval_status
                 ) VALUES (
                     :tenant_id, :date, :member_id, :product_id, :quantity,
                     :unit_price, :base_point, :event_multiplier, :final_point,
+                    :applied_event_id, :applied_event_name,
                     :note, 'ユーザー確認待ち'
                 )
             ");
@@ -199,6 +267,8 @@ try {
         'base_point' => $base_point,
         'event_multiplier' => $event_multiplier,
         'final_point' => $final_point,
+        'applied_event_id' => $applied_event_id,
+        'applied_event_name' => $applied_event_name,
         'note' => $note
       ]);
 

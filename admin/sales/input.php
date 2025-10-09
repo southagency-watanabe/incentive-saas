@@ -55,9 +55,9 @@ $productsJson = json_encode($products);
         <a href="/admin/masters/members.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">マスタ管理</a>
         <a href="/admin/sales/input.php" class="py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">売上管理</a>
         <a href="/admin/approvals.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">承認管理</a>
-        <a href="#" class="py-4 px-2 text-gray-600 hover:text-gray-900">実績管理</a>
-        <a href="#" class="py-4 px-2 text-gray-600 hover:text-gray-900">掲示板管理</a>
-        <a href="#" class="py-4 px-2 text-gray-600 hover:text-gray-900">ランキング</a>
+        <a href="/admin/performance.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">実績管理</a>
+        <a href="/admin/bulletins.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">掲示板管理</a>
+        <a href="/admin/ranking.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">ランキング</a>
       </div>
     </div>
   </nav>
@@ -176,6 +176,7 @@ $productsJson = json_encode($products);
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">金額</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">付与pt</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">倍率</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">イベント</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">承認状態</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">備考</th>
           </tr>
@@ -294,12 +295,14 @@ $productsJson = json_encode($products);
       tbody.innerHTML = '';
 
       if (sales.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
         return;
       }
 
       sales.forEach(sale => {
         const amount = sale.quantity * sale.unit_price;
+        const eventDisplay = sale.applied_event_name ? escapeHtml(sale.applied_event_name) : '-';
+        const eventClass = sale.applied_event_name ? 'text-blue-600 font-medium' : 'text-gray-500';
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -311,6 +314,7 @@ $productsJson = json_encode($products);
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${amount.toLocaleString()}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${sale.final_point}pt</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${parseFloat(sale.event_multiplier).toFixed(1)}倍</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm ${eventClass}">${eventDisplay}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(sale.approval_status)}">
                             ${escapeHtml(sale.approval_status)}
@@ -327,7 +331,9 @@ $productsJson = json_encode($products);
       switch (status) {
         case 'ユーザー確認待ち':
           return 'bg-orange-100 text-orange-800';
-        case '承認済':
+        case '承認待ち':
+          return 'bg-yellow-100 text-yellow-800';
+        case '承認済み':
           return 'bg-green-100 text-green-800';
         case '却下':
           return 'bg-red-100 text-red-800';

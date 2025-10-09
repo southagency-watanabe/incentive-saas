@@ -14,7 +14,7 @@ function getDB()
   if ($pdo === null) {
     try {
       $pdo = new PDO(
-        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET,
+        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
         DB_USER,
         DB_PASS,
         [
@@ -23,6 +23,9 @@ function getDB()
           PDO::ATTR_EMULATE_PREPARES => false,
         ]
       );
+      
+      // 文字セットを明示的に設定
+      $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
     } catch (PDOException $e) {
       // 本番環境ではエラー詳細を隠す
       error_log('Database connection failed: ' . $e->getMessage());

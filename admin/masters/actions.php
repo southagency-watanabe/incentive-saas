@@ -38,8 +38,8 @@ requireAdmin();
         <a href="/admin/sales/input.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">売上管理</a>
         <a href="/admin/approvals.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">承認管理</a>
         <a href="#" class="py-4 px-2 text-gray-600 hover:text-gray-900">実績管理</a>
-        <a href="#" class="py-4 px-2 text-gray-600 hover:text-gray-900">掲示板管理</a>
-        <a href="#" class="py-4 px-2 text-gray-600 hover:text-gray-900">ランキング</a>
+        <a href="/admin/bulletins.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">掲示板管理</a>
+        <a href="/admin/ranking.php" class="py-4 px-2 text-gray-600 hover:text-gray-900">ランキング</a>
       </div>
     </div>
   </nav>

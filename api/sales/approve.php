@@ -47,8 +47,8 @@ try {
 
   // 強制承認
   $stmt = $pdo->prepare("
-        UPDATE sales_records 
-        SET approval_status = '承認済',
+        UPDATE sales_records
+        SET approval_status = '承認済み',
             approver = :approver,
             approved_at = NOW()
         WHERE tenant_id = :tenant_id AND id = :id
