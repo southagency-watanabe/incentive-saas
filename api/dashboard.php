@@ -30,8 +30,8 @@ try {
     $prev_end_date = date('Y-m-d', strtotime($start_date) - 86400);
     $prev_start_date = date('Y-m-d', strtotime($prev_end_date) - ($period_days - 1) * 86400);
 
-    // WHERE句の構築
-    function buildWhereClause($tenant_id, $start_date, $end_date, $member_ids, $team_ids, $product_ids, $search_text, $table_alias = 'sr')
+    // WHERE句の構築（team_idsの条件は含めない - JOINの有無で分離）
+    function buildWhereClause($tenant_id, $start_date, $end_date, $member_ids, $product_ids, $search_text, $table_alias = 'sr')
     {
         $where = ["$table_alias.tenant_id = :tenant_id"];
         $where[] = "$table_alias.date BETWEEN :start_date AND :end_date";
@@ -50,6 +50,15 @@ try {
         return implode(' AND ', $where);
     }
 
+    // チームフィルタ条件の構築
+    function buildTeamFilter($team_ids) {
+        if (empty($team_ids)) {
+            return "";
+        }
+        $placeholders = implode(',', array_map(fn($i) => ":team_id_$i", array_keys($team_ids)));
+        return " AND m.team_id IN ($placeholders)";
+    }
+
     // パラメータのバインド
     function bindParams($stmt, $tenant_id, $start_date, $end_date, $member_ids, $team_ids, $product_ids)
     {
@@ -61,25 +70,34 @@ try {
             $stmt->bindValue(":member_id_$i", $member_id);
         }
 
+        foreach ($team_ids as $i => $team_id) {
+            $stmt->bindValue(":team_id_$i", $team_id);
+        }
+
         foreach ($product_ids as $i => $product_id) {
             $stmt->bindValue(":product_id_$i", $product_id);
         }
     }
 
     // ===== スコアカード: 商品別売上金額 =====
-    $where_current = buildWhereClause($tenant_id, $start_date, $end_date, $member_ids, $team_ids, $product_ids, $search_text);
-    $where_prev = buildWhereClause($tenant_id, $prev_start_date, $prev_end_date, $member_ids, $team_ids, $product_ids, $search_text);
+    $where_current = buildWhereClause($tenant_id, $start_date, $end_date, $member_ids, $product_ids, $search_text);
+    $where_prev = buildWhereClause($tenant_id, $prev_start_date, $prev_end_date, $member_ids, $product_ids, $search_text);
+    $team_filter = buildTeamFilter($team_ids);
+
+    $member_join = !empty($team_ids) ? "INNER JOIN members m ON sr.tenant_id = m.tenant_id AND sr.member_id = m.member_id" : "";
 
     $sql_current = "
         SELECT SUM(sr.quantity * sr.unit_price) as total_sales
         FROM sales_records sr
-        WHERE $where_current
+        $member_join
+        WHERE $where_current $team_filter
     ";
 
     $sql_prev = "
         SELECT SUM(sr.quantity * sr.unit_price) as total_sales
         FROM sales_records sr
-        WHERE $where_prev
+        $member_join
+        WHERE $where_prev $team_filter
     ";
 
     $stmt = $pdo->prepare($sql_current);
@@ -99,13 +117,15 @@ try {
     $sql_current_count = "
         SELECT COUNT(*) as total_count
         FROM sales_records sr
-        WHERE $where_current
+        $member_join
+        WHERE $where_current $team_filter
     ";
 
     $sql_prev_count = "
         SELECT COUNT(*) as total_count
         FROM sales_records sr
-        WHERE $where_prev
+        $member_join
+        WHERE $where_prev $team_filter
     ";
 
     $stmt = $pdo->prepare($sql_current_count);
@@ -122,18 +142,23 @@ try {
     $count_diff_percent = $prev_count > 0 ? ($count_diff / $prev_count) * 100 : 0;
 
     // ===== スコアカード: 商品別粗利益 =====
+    $profit_joins = "INNER JOIN products p ON sr.tenant_id = p.tenant_id AND sr.product_id = p.product_id";
+    if (!empty($team_ids)) {
+        $profit_joins .= " INNER JOIN members m ON sr.tenant_id = m.tenant_id AND sr.member_id = m.member_id";
+    }
+
     $sql_current_profit = "
         SELECT SUM(sr.quantity * (sr.unit_price - COALESCE(p.cost, 0))) as total_profit
         FROM sales_records sr
-        INNER JOIN products p ON sr.tenant_id = p.tenant_id AND sr.product_id = p.product_id
-        WHERE $where_current
+        $profit_joins
+        WHERE $where_current $team_filter
     ";
 
     $sql_prev_profit = "
         SELECT SUM(sr.quantity * (sr.unit_price - COALESCE(p.cost, 0))) as total_profit
         FROM sales_records sr
-        INNER JOIN products p ON sr.tenant_id = p.tenant_id AND sr.product_id = p.product_id
-        WHERE $where_prev
+        $profit_joins
+        WHERE $where_prev $team_filter
     ";
 
     $stmt = $pdo->prepare($sql_current_profit);
@@ -161,6 +186,11 @@ try {
         default => '%Y-%m'
     };
 
+    $trend_joins = "INNER JOIN products p ON sr.tenant_id = p.tenant_id AND sr.product_id = p.product_id";
+    if (!empty($team_ids)) {
+        $trend_joins .= " INNER JOIN members m ON sr.tenant_id = m.tenant_id AND sr.member_id = m.member_id";
+    }
+
     if ($granularity === 'quarterly') {
         $sql_trend = "
             SELECT
@@ -168,8 +198,8 @@ try {
                 SUM(sr.quantity * sr.unit_price) as sales,
                 SUM(sr.quantity * (sr.unit_price - COALESCE(p.cost, 0))) as profit
             FROM sales_records sr
-            INNER JOIN products p ON sr.tenant_id = p.tenant_id AND sr.product_id = p.product_id
-            WHERE $where_current
+            $trend_joins
+            WHERE $where_current $team_filter
             GROUP BY period
             ORDER BY period ASC
         ";
@@ -180,8 +210,8 @@ try {
                 SUM(sr.quantity * sr.unit_price) as sales,
                 SUM(sr.quantity * (sr.unit_price - COALESCE(p.cost, 0))) as profit
             FROM sales_records sr
-            INNER JOIN products p ON sr.tenant_id = p.tenant_id AND sr.product_id = p.product_id
-            WHERE $where_current
+            $trend_joins
+            WHERE $where_current $team_filter
             GROUP BY period
             ORDER BY period ASC
         ";
@@ -203,6 +233,11 @@ try {
     }
 
     // ===== 商品別売上/粗利 =====
+    $product_joins = "INNER JOIN products p ON sr.tenant_id = p.tenant_id AND sr.product_id = p.product_id";
+    if (!empty($team_ids)) {
+        $product_joins .= " INNER JOIN members m ON sr.tenant_id = m.tenant_id AND sr.member_id = m.member_id";
+    }
+
     $sql_products = "
         SELECT
             sr.product_id,
@@ -212,8 +247,8 @@ try {
             SUM(sr.quantity) as quantity,
             COUNT(*) as count
         FROM sales_records sr
-        INNER JOIN products p ON sr.tenant_id = p.tenant_id AND sr.product_id = p.product_id
-        WHERE $where_current
+        $product_joins
+        WHERE $where_current $team_filter
         GROUP BY sr.product_id, p.product_name
         ORDER BY sales DESC
     ";
@@ -222,6 +257,74 @@ try {
     bindParams($stmt, $tenant_id, $start_date, $end_date, $member_ids, $team_ids, $product_ids);
     $stmt->execute();
     $product_data = $stmt->fetchAll();
+
+    // ===== ランキング: 売上金額TOP10 =====
+    $where_ranking = "sr.tenant_id = :tenant_id AND sr.date BETWEEN :start_date AND :end_date AND sr.approval_status = '承認済み'";
+
+    // チームフィルタがある場合は適用
+    if (!empty($team_ids)) {
+        $team_placeholders = implode(',', array_map(fn($i) => ":team_id_$i", array_keys($team_ids)));
+        $where_ranking .= " AND m.team_id IN ($team_placeholders)";
+    }
+
+    // メンバーフィルタがある場合は適用
+    if (!empty($member_ids)) {
+        $member_placeholders = implode(',', array_map(fn($i) => ":rank_member_id_$i", array_keys($member_ids)));
+        $where_ranking .= " AND sr.member_id IN ($member_placeholders)";
+    }
+
+    $sql_sales_ranking = "
+        SELECT
+            m.member_id,
+            m.name as member_name,
+            SUM(sr.quantity * sr.unit_price) as total_sales
+        FROM sales_records sr
+        INNER JOIN members m ON sr.tenant_id = m.tenant_id AND sr.member_id = m.member_id
+        WHERE $where_ranking
+        GROUP BY m.member_id, m.name
+        ORDER BY total_sales DESC
+        LIMIT 10
+    ";
+
+    $stmt = $pdo->prepare($sql_sales_ranking);
+    $stmt->bindValue(':tenant_id', $tenant_id);
+    $stmt->bindValue(':start_date', $start_date);
+    $stmt->bindValue(':end_date', $end_date);
+    foreach ($team_ids as $i => $team_id) {
+        $stmt->bindValue(":team_id_$i", $team_id);
+    }
+    foreach ($member_ids as $i => $member_id) {
+        $stmt->bindValue(":rank_member_id_$i", $member_id);
+    }
+    $stmt->execute();
+    $sales_ranking = $stmt->fetchAll();
+
+    // ===== ランキング: ポイント獲得TOP10 =====
+    $sql_points_ranking = "
+        SELECT
+            m.member_id,
+            m.name as member_name,
+            SUM(sr.final_point) as total_points
+        FROM sales_records sr
+        INNER JOIN members m ON sr.tenant_id = m.tenant_id AND sr.member_id = m.member_id
+        WHERE $where_ranking
+        GROUP BY m.member_id, m.name
+        ORDER BY total_points DESC
+        LIMIT 10
+    ";
+
+    $stmt = $pdo->prepare($sql_points_ranking);
+    $stmt->bindValue(':tenant_id', $tenant_id);
+    $stmt->bindValue(':start_date', $start_date);
+    $stmt->bindValue(':end_date', $end_date);
+    foreach ($team_ids as $i => $team_id) {
+        $stmt->bindValue(":team_id_$i", $team_id);
+    }
+    foreach ($member_ids as $i => $member_id) {
+        $stmt->bindValue(":rank_member_id_$i", $member_id);
+    }
+    $stmt->execute();
+    $points_ranking = $stmt->fetchAll();
 
     // レスポンス
     echo json_encode([
@@ -248,6 +351,10 @@ try {
         ],
         'trend' => $trend_data,
         'products' => $product_data,
+        'rankings' => [
+            'sales' => $sales_ranking,
+            'points' => $points_ranking
+        ],
         'filters' => [
             'start_date' => $start_date,
             'end_date' => $end_date,
@@ -255,12 +362,14 @@ try {
             'prev_end_date' => $prev_end_date
         ]
     ]);
-} catch (PDOException $e) {
+} catch (Exception $e) {
     error_log('Dashboard API error: ' . $e->getMessage());
+    error_log('Stack trace: ' . $e->getTraceAsString());
     http_response_code(500);
     echo json_encode([
         'success' => false,
         'message' => 'サーバーエラーが発生しました。',
-        'debug' => $e->getMessage()
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString()
     ]);
 }

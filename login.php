@@ -60,8 +60,10 @@ if (isset($_GET['error'])) {
           id="tenant_id"
           name="tenant_id"
           value="DEMO01"
+          placeholder="DEMO01"
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           required>
+        <p class="mt-1 text-xs text-gray-500">開発用: DEMO01</p>
       </div>
 
       <!-- ログインID -->
@@ -73,9 +75,11 @@ if (isset($_GET['error'])) {
           type="text"
           id="login_id"
           name="login_id"
-          value="admin"
+          value="takahama"
+          placeholder="takahama"
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           required>
+        <p class="mt-1 text-xs text-gray-500">開発用: takahama（高濱 太郎）</p>
       </div>
 
       <!-- PIN -->
@@ -89,9 +93,11 @@ if (isset($_GET['error'])) {
           name="pin"
           maxlength="4"
           pattern="[0-9]{4}"
-          value="1234"
+          value="1111"
+          placeholder="1111"
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           required>
+        <p class="mt-1 text-xs text-gray-500">開発用: 1111</p>
       </div>
 
       <!-- ログインボタン -->

@@ -401,7 +401,7 @@ $productsJson = json_encode($products);
                             ${escapeHtml(sale.approval_status)}
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-500">${escapeHtml(sale.note || '-')}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">${escapeHtml(sale.note || '-')}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button onclick='deleteSale(${sale.id}, "${escapeHtml(sale.product_name)}")' class="text-red-600 hover:text-red-900">削除</button>
                     </td>

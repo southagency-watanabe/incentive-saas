@@ -84,22 +84,17 @@ $products = $stmt->fetchAll();
     <!-- フィルタエリア -->
     <div class="bg-white rounded-lg shadow mb-6">
       <!-- フィルタヘッダー（常に表示） -->
-      <div class="p-6 cursor-pointer" onclick="toggleFilterDetails()">
-        <div class="flex justify-between items-center">
-          <div class="flex-1">
-            <div class="flex justify-between items-center mb-2">
-              <h2 class="text-lg font-bold text-gray-800">フィルタ</h2>
-              <button onclick="event.stopPropagation(); resetFilters()" class="text-sm text-gray-600 hover:text-gray-900">リセット</button>
-            </div>
+      <div class="p-6 pb-3">
+        <div class="flex-1">
             <!-- 期間フィルタ（常に表示） -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">期間</label>
-              <div class="flex gap-2 items-center" onclick="event.stopPropagation()">
+              <div class="flex gap-2 items-center flex-wrap">
                 <input type="date" id="startDate" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                 <span>〜</span>
                 <input type="date" id="endDate" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                 <select id="periodPreset" onchange="applyPreset()" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                  <option value="">プリセット</option>
+                  <option value="">プリセット選択</option>
                   <option value="today">今日</option>
                   <option value="this_week">今週</option>
                   <option value="this_month" selected>今月</option>
@@ -108,15 +103,24 @@ $products = $stmt->fetchAll();
                   <option value="this_year">今年</option>
                   <option value="last_30days">過去30日</option>
                 </select>
+                <button onclick="applyFilters()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                  適用
+                </button>
+                <button onclick="resetFilters()" class="bg-gray-200 text-gray-700 px-6 py-2 rounded hover:bg-gray-300">
+                  リセット
+                </button>
               </div>
             </div>
-          </div>
-          <div class="ml-4">
-            <svg id="filterArrow" class="w-6 h-6 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-          </div>
         </div>
+      </div>
+
+      <!-- 詳細フィルタ展開ボタン -->
+      <div class="flex justify-center pb-3">
+        <button onclick="toggleFilterDetails()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <svg id="filterArrow" class="w-6 h-6 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
       </div>
 
       <!-- フィルタ詳細（開閉可能） -->
@@ -168,12 +172,6 @@ $products = $stmt->fetchAll();
               </div>
             </div>
           </div>
-
-          <div class="mt-4 flex justify-end">
-            <button onclick="applyFilters()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-              適用
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -213,21 +211,14 @@ $products = $stmt->fetchAll();
 
     <!-- 売上推移グラフ -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
-      <div class="flex justify-between items-center mb-4">
+      <div class="mb-4">
         <h3 class="text-lg font-bold text-gray-800">売上推移</h3>
-        <select id="granularity" onchange="applyFilters()" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-          <option value="daily">日別</option>
-          <option value="weekly">週別</option>
-          <option value="monthly" selected>月別</option>
-          <option value="quarterly">四半期</option>
-          <option value="yearly">年間</option>
-        </select>
       </div>
       <canvas id="trendChart" height="80"></canvas>
     </div>
 
     <!-- 商品別売上/粗利テーブル -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="bg-white rounded-lg shadow overflow-hidden mb-8">
       <div class="p-6 border-b">
         <h3 class="text-lg font-bold text-gray-800">商品別売上/粗利</h3>
       </div>
@@ -256,6 +247,27 @@ $products = $stmt->fetchAll();
             <!-- データはJavaScriptで挿入 -->
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ランキングセクション -->
+    <div class="mt-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">🏆 メンバーランキング</h2>
+      <div class="grid grid-cols-2 gap-6">
+        <!-- 売上金額ランキング -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">💰 売上金額TOP10</h3>
+          <div id="salesRanking" class="space-y-2">
+            <p class="text-gray-500 text-center py-4">データを読み込み中...</p>
+          </div>
+        </div>
+        <!-- ポイント獲得ランキング -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">⭐ ポイント獲得TOP10</h3>
+          <div id="pointsRanking" class="space-y-2">
+            <p class="text-gray-500 text-center py-4">データを読み込み中...</p>
+          </div>
+        </div>
       </div>
     </div>
     </main>
@@ -349,13 +361,52 @@ $products = $stmt->fetchAll();
       applyFilters();
     }
 
+    // 期間に基づいて自動的にグラフ表示単位を計算
+    function calculateGranularity(startDate, endDate) {
+      if (!startDate || !endDate) {
+        return 'monthly'; // デフォルト
+      }
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const daysDiff = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+      if (isNaN(daysDiff)) {
+        return 'monthly'; // デフォルト
+      }
+
+      if (daysDiff <= 14) {
+        return 'daily';
+      } else if (daysDiff <= 60) {
+        return 'weekly';
+      } else if (daysDiff <= 365) {
+        return 'monthly';
+      } else if (daysDiff <= 730) {
+        return 'quarterly';
+      } else {
+        return 'yearly';
+      }
+    }
+
     // フィルタ適用
     async function applyFilters() {
       try {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         const searchText = document.getElementById('searchText').value;
-        const granularity = document.getElementById('granularity').value;
+
+        console.log('Start date:', startDate);
+        console.log('End date:', endDate);
+
+        if (!startDate || !endDate) {
+          console.error('Start date or end date is empty');
+          alert('開始日と終了日を選択してください。');
+          return;
+        }
+
+        // 期間に基づいて自動的にグラフ表示単位を計算
+        const granularity = calculateGranularity(startDate, endDate);
+        console.log('Calculated granularity:', granularity);
 
         const memberIds = Array.from(document.querySelectorAll('input[name="member_ids[]"]:checked'))
           .map(cb => cb.value).join(',');
@@ -375,19 +426,27 @@ $products = $stmt->fetchAll();
         if (teamIds) params.append('team_ids', teamIds);
         if (productIds) params.append('product_ids', productIds);
 
+        console.log('API URL:', `/api/dashboard.php?${params}`);
+
         const response = await fetch(`/api/dashboard.php?${params}`);
         const result = await response.json();
+
+        console.log('API Response:', result);
 
         if (result.success) {
           currentData = result;
           updateScoreCards(result.score_cards);
           updateTrendChart(result.trend);
           updateProductTable(result.products);
+          if (result.rankings) {
+            updateRankings(result.rankings);
+          }
         } else {
+          console.error('API returned success=false:', result);
           alert('データの取得に失敗しました。');
         }
       } catch (error) {
-        console.error(error);
+        console.error('Error in applyFilters:', error);
         alert('エラーが発生しました。');
       }
     }
@@ -548,6 +607,51 @@ $products = $stmt->fetchAll();
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    // ランキング更新
+    function updateRankings(rankings) {
+      // 売上金額ランキング
+      const salesRanking = document.getElementById('salesRanking');
+      salesRanking.innerHTML = '';
+
+      if (rankings.sales && rankings.sales.length > 0) {
+        rankings.sales.forEach((member, index) => {
+          const div = document.createElement('div');
+          div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded';
+          div.innerHTML = `
+            <div class="flex items-center gap-3">
+              <span class="text-lg font-bold ${index < 3 ? 'text-yellow-500' : 'text-gray-500'}">${index + 1}</span>
+              <span class="font-medium">${escapeHtml(member.member_name)}</span>
+            </div>
+            <span class="font-bold text-gray-900">¥${parseFloat(member.total_sales).toLocaleString()}</span>
+          `;
+          salesRanking.appendChild(div);
+        });
+      } else {
+        salesRanking.innerHTML = '<p class="text-gray-500 text-center py-4">データがありません</p>';
+      }
+
+      // ポイント獲得ランキング
+      const pointsRanking = document.getElementById('pointsRanking');
+      pointsRanking.innerHTML = '';
+
+      if (rankings.points && rankings.points.length > 0) {
+        rankings.points.forEach((member, index) => {
+          const div = document.createElement('div');
+          div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded';
+          div.innerHTML = `
+            <div class="flex items-center gap-3">
+              <span class="text-lg font-bold ${index < 3 ? 'text-yellow-500' : 'text-gray-500'}">${index + 1}</span>
+              <span class="font-medium">${escapeHtml(member.member_name)}</span>
+            </div>
+            <span class="font-bold text-blue-600">${parseFloat(member.total_points).toLocaleString()}</span>
+          `;
+          pointsRanking.appendChild(div);
+        });
+      } else {
+        pointsRanking.innerHTML = '<p class="text-gray-500 text-center py-4">データがありません</p>';
+      }
     }
   </script>
 </body>

@@ -125,14 +125,14 @@ requireAdmin();
           <button id="graphTabProductSales" onclick="switchGraphTab('product_sales')" class="px-4 py-2 rounded bg-blue-600 text-white font-medium">
             商品別売上
           </button>
+          <button id="graphTabProductProfit" onclick="switchGraphTab('product_profit')" class="px-4 py-2 rounded bg-gray-200 text-gray-700">
+            商品別粗利
+          </button>
           <button id="graphTabMemberSales" onclick="switchGraphTab('member_sales')" class="px-4 py-2 rounded bg-gray-200 text-gray-700">
             メンバー別売上
           </button>
           <button id="graphTabMemberProfit" onclick="switchGraphTab('member_profit')" class="px-4 py-2 rounded bg-gray-200 text-gray-700">
             メンバー別粗利益
-          </button>
-          <button id="graphTabProductProfit" onclick="switchGraphTab('product_profit')" class="px-4 py-2 rounded bg-gray-200 text-gray-700">
-            商品別粗利益
           </button>
         </div>
         <div class="flex gap-2">
