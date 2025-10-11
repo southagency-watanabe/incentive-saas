@@ -37,17 +37,64 @@ $actions = $stmt->fetchAll();
     <!-- ナビゲーション -->
     <nav class="flex-1 overflow-y-auto py-4">
       <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>ダッシュボード</span>
+        <span>ランキングサマリー</span>
       </a>
-      <a href="/admin/masters/members.php" class="flex items-center px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
-        <span class="font-medium">マスタ管理</span>
-      </a>
+
+      <!-- マスタ管理ドロップダウン -->
+      <div>
+        <button onclick="toggleMasterMenu()" class="w-full flex items-center justify-between px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
+          <span class="font-medium">マスタ管理</span>
+          <svg id="masterArrow" class="w-4 h-4 transition-transform duration-200 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="masterSubmenu" class="bg-gray-50">
+          <a href="/admin/masters/members.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>メンバー</span>
+          </a>
+          <a href="/admin/masters/teams.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>チーム</span>
+          </a>
+          <a href="/admin/masters/products.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>商品</span>
+          </a>
+          <a href="/admin/masters/actions.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>アクション</span>
+          </a>
+          <a href="/admin/masters/tasks.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>タスク</span>
+          </a>
+          <a href="/admin/masters/events.php" class="flex items-center px-6 py-2 pl-12 text-sm text-blue-600 font-medium bg-blue-50 hover:bg-blue-100">
+            <span>イベント</span>
+          </a>
+        </div>
+      </div>
+
       <a href="/admin/sales/input.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>売上管理</span>
       </a>
-      <a href="/admin/approvals.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>承認管理</span>
-      </a>
+
+      <!-- 承認管理ドロップダウン -->
+      <div>
+        <button onclick="toggleApprovalMenu()" class="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+          <span>承認管理</span>
+          <svg id="approvalArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="approvalSubmenu" class="hidden bg-gray-50">
+          <a href="/admin/approvals.php?tab=sales" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>売上承認</span>
+          </a>
+          <a href="/admin/approvals.php?tab=actions" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>アクション承認</span>
+          </a>
+          <a href="/admin/approvals.php?tab=tasks" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>タスク承認</span>
+          </a>
+        </div>
+      </div>
+
       <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>実績管理</span>
       </a>
@@ -71,19 +118,6 @@ $actions = $stmt->fetchAll();
     <header class="bg-white shadow-sm border-b">
       <div class="px-8 py-6">
         <h2 class="text-2xl font-bold text-gray-800">イベントマスタ</h2>
-      </div>
-      <!-- サブナビゲーション（マスタ切り替え） -->
-      <div class="bg-gray-50 border-t">
-        <div class="px-8">
-          <div class="flex space-x-6">
-            <a href="/admin/masters/members.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">メンバー</a>
-            <a href="/admin/masters/teams.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">チーム</a>
-            <a href="/admin/masters/products.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">商品</a>
-            <a href="/admin/masters/actions.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">アクション</a>
-            <a href="/admin/masters/tasks.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">タスク</a>
-            <a href="/admin/masters/events.php" class="py-3 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">イベント</a>
-          </div>
-        </div>
       </div>
     </header>
 
@@ -314,6 +348,34 @@ $actions = $stmt->fetchAll();
   <script>
     let currentMode = 'create';
 
+    // マスター管理メニューの開閉
+    function toggleMasterMenu() {
+      const submenu = document.getElementById('masterSubmenu');
+      const arrow = document.getElementById('masterArrow');
+
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // 承認管理ドロップダウンの開閉
+    function toggleApprovalMenu() {
+      const submenu = document.getElementById('approvalSubmenu');
+      const arrow = document.getElementById('approvalArrow');
+
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
     // 初期読み込み
     document.addEventListener('DOMContentLoaded', () => {
       loadEvents();
@@ -418,7 +480,12 @@ $actions = $stmt->fetchAll();
       }
 
       events.forEach(event => {
-        const period = `${event.start_date} 〜 ${event.end_date}`;
+        // 日付のみフォーマット（YYYY-MM-DD）
+        const formatDate = (datetime) => {
+          if (!datetime) return '';
+          return datetime.substring(0, 10);
+        };
+        const period = `${formatDate(event.start_date)} 〜 ${formatDate(event.end_date)}`;
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -469,9 +536,9 @@ $actions = $stmt->fetchAll();
         document.getElementById('eventId').value = data.event_id;
         document.getElementById('eventName').value = data.event_name;
         document.getElementById('repeatType').value = data.repeat_type;
-        // 日付のみのデータをdatetime-local形式に変換（00:00:00で初期化）
-        document.getElementById('startDate').value = data.start_date ? data.start_date + 'T00:00' : '';
-        document.getElementById('endDate').value = data.end_date ? data.end_date + 'T23:59' : '';
+        // datetime形式をdatetime-local形式に変換（YYYY-MM-DDTHH:MM）
+        document.getElementById('startDate').value = data.start_date ? data.start_date.substring(0, 16) : '';
+        document.getElementById('endDate').value = data.end_date ? data.end_date.substring(0, 16) : '';
         document.getElementById('targetType').value = data.target_type;
         document.getElementById('multiplier').value = data.multiplier;
         document.getElementById('status').value = data.status;
@@ -566,7 +633,8 @@ $actions = $stmt->fetchAll();
         }
 
         if (overlappingEvents.length > 0) {
-          const names = overlappingEvents.map(e => `「${e.event_name}」(${e.start_date}〜${e.end_date})`).join('\n');
+          const formatDate = (datetime) => datetime ? datetime.substring(0, 10) : '';
+          const names = overlappingEvents.map(e => `「${e.event_name}」(${formatDate(e.start_date)}〜${formatDate(e.end_date)})`).join('\n');
           return `⚠️ 以下のイベントと期間が重複しています：\n\n${names}`;
         }
 
@@ -622,11 +690,11 @@ $actions = $stmt->fetchAll();
         targetIds = selectedActions.join(',');
       }
 
-      // datetime-local形式の値をdate形式に変換
+      // datetime-local形式の値をdatetime形式に変換（YYYY-MM-DD HH:MM:SS）
       const startDateTime = formData.get('start_date');
       const endDateTime = formData.get('end_date');
-      const startDate = startDateTime ? startDateTime.split('T')[0] : '';
-      const endDate = endDateTime ? endDateTime.split('T')[0] : '';
+      const startDate = startDateTime ? startDateTime.replace('T', ' ') + ':00' : '';
+      const endDate = endDateTime ? endDateTime.replace('T', ' ') + ':00' : '';
 
       // 期間重複チェック
       const currentEventId = currentMode === 'edit' ? document.getElementById('eventId').value : null;

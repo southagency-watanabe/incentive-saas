@@ -25,6 +25,40 @@ try {
         $end_date = date('Y-m-t');
     }
 
+    // チームと個人フィルタの統合ロジック
+    $final_member_ids = [];
+    $team_member_ids = [];
+
+    if (!empty($team_ids)) {
+        // 選択されたチームに所属するメンバーIDを取得
+        $team_placeholders = implode(',', array_fill(0, count($team_ids), '?'));
+        $stmt = $pdo->prepare("
+            SELECT DISTINCT member_id
+            FROM members
+            WHERE tenant_id = ? AND team_id IN ($team_placeholders)
+        ");
+        $params = array_merge([$tenant_id], $team_ids);
+        $stmt->execute($params);
+        $team_member_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $final_member_ids = array_merge($final_member_ids, $team_member_ids);
+    }
+
+    if (!empty($member_ids)) {
+        // 選択された個人のうち、チーム外のメンバーのみを追加
+        foreach ($member_ids as $member_id) {
+            if (!in_array($member_id, $team_member_ids)) {
+                $final_member_ids[] = $member_id;
+            }
+        }
+    }
+
+    // 最終的なメンバーIDリストを使用（重複削除）
+    $final_member_ids = array_unique($final_member_ids);
+
+    // 以降のクエリでは $final_member_ids を使用し、team_ids は使わない
+    $member_ids = $final_member_ids;
+    $team_ids = []; // チームフィルタは使わない（すでにメンバーIDに変換済み）
+
     // 前期間の計算
     $period_days = (strtotime($end_date) - strtotime($start_date)) / 86400 + 1;
     $prev_end_date = date('Y-m-d', strtotime($start_date) - 86400);
@@ -228,7 +262,7 @@ try {
             list($year, $week) = explode('-', $row['period']);
             $dto = new DateTime();
             $dto->setISODate($year, $week);
-            $row['period'] = $dto->format('Y-m-d') . ' (W' . $week . ')';
+            $row['period'] = $dto->format('Y-m-d'); // 週番号を削除
         }
     }
 
@@ -258,35 +292,42 @@ try {
     $stmt->execute();
     $product_data = $stmt->fetchAll();
 
-    // ===== ランキング: 売上金額TOP10 =====
+    // ===== 個人ランキング（売上・ポイント・前期間比較込み）TOP10 =====
     $where_ranking = "sr.tenant_id = :tenant_id AND sr.date BETWEEN :start_date AND :end_date AND sr.approval_status = '承認済み'";
+    $where_prev_ranking = "sr.tenant_id = :tenant_id AND sr.date BETWEEN :prev_start_date AND :prev_end_date AND sr.approval_status = '承認済み'";
 
     // チームフィルタがある場合は適用
     if (!empty($team_ids)) {
         $team_placeholders = implode(',', array_map(fn($i) => ":team_id_$i", array_keys($team_ids)));
         $where_ranking .= " AND m.team_id IN ($team_placeholders)";
+        $where_prev_ranking .= " AND m.team_id IN ($team_placeholders)";
     }
 
     // メンバーフィルタがある場合は適用
     if (!empty($member_ids)) {
         $member_placeholders = implode(',', array_map(fn($i) => ":rank_member_id_$i", array_keys($member_ids)));
         $where_ranking .= " AND sr.member_id IN ($member_placeholders)";
+        $where_prev_ranking .= " AND sr.member_id IN ($member_placeholders)";
     }
 
-    $sql_sales_ranking = "
+    // 現在期間の個人ランキング
+    $sql_member_ranking = "
         SELECT
             m.member_id,
             m.name as member_name,
-            SUM(sr.quantity * sr.unit_price) as total_sales
+            t.team_name,
+            SUM(sr.quantity * sr.unit_price) as total_sales,
+            SUM(sr.final_point) as total_points
         FROM sales_records sr
         INNER JOIN members m ON sr.tenant_id = m.tenant_id AND sr.member_id = m.member_id
+        LEFT JOIN teams t ON m.tenant_id = t.tenant_id AND m.team_id = t.team_id
         WHERE $where_ranking
-        GROUP BY m.member_id, m.name
+        GROUP BY m.member_id, m.name, t.team_name
         ORDER BY total_sales DESC
         LIMIT 10
     ";
 
-    $stmt = $pdo->prepare($sql_sales_ranking);
+    $stmt = $pdo->prepare($sql_member_ranking);
     $stmt->bindValue(':tenant_id', $tenant_id);
     $stmt->bindValue(':start_date', $start_date);
     $stmt->bindValue(':end_date', $end_date);
@@ -297,26 +338,24 @@ try {
         $stmt->bindValue(":rank_member_id_$i", $member_id);
     }
     $stmt->execute();
-    $sales_ranking = $stmt->fetchAll();
+    $member_ranking_current = $stmt->fetchAll();
 
-    // ===== ランキング: ポイント獲得TOP10 =====
-    $sql_points_ranking = "
+    // 前期間の個人ランキングデータ
+    $sql_member_ranking_prev = "
         SELECT
             m.member_id,
-            m.name as member_name,
+            SUM(sr.quantity * sr.unit_price) as total_sales,
             SUM(sr.final_point) as total_points
         FROM sales_records sr
         INNER JOIN members m ON sr.tenant_id = m.tenant_id AND sr.member_id = m.member_id
-        WHERE $where_ranking
-        GROUP BY m.member_id, m.name
-        ORDER BY total_points DESC
-        LIMIT 10
+        WHERE $where_prev_ranking
+        GROUP BY m.member_id
     ";
 
-    $stmt = $pdo->prepare($sql_points_ranking);
+    $stmt = $pdo->prepare($sql_member_ranking_prev);
     $stmt->bindValue(':tenant_id', $tenant_id);
-    $stmt->bindValue(':start_date', $start_date);
-    $stmt->bindValue(':end_date', $end_date);
+    $stmt->bindValue(':prev_start_date', $prev_start_date);
+    $stmt->bindValue(':prev_end_date', $prev_end_date);
     foreach ($team_ids as $i => $team_id) {
         $stmt->bindValue(":team_id_$i", $team_id);
     }
@@ -324,7 +363,147 @@ try {
         $stmt->bindValue(":rank_member_id_$i", $member_id);
     }
     $stmt->execute();
-    $points_ranking = $stmt->fetchAll();
+    $member_ranking_prev_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // 前期間データをmember_idでマッピング
+    $prev_data_map = [];
+    foreach ($member_ranking_prev_data as $prev) {
+        $prev_data_map[$prev['member_id']] = $prev;
+    }
+
+    // 現在期間ランキングに前期間比較を追加
+    $member_ranking = [];
+    foreach ($member_ranking_current as $member) {
+        $prev = $prev_data_map[$member['member_id']] ?? null;
+        $prev_sales = $prev ? (float)$prev['total_sales'] : 0;
+        $prev_points = $prev ? (float)$prev['total_points'] : 0;
+
+        $sales_diff = (float)$member['total_sales'] - $prev_sales;
+        $points_diff = (float)$member['total_points'] - $prev_points;
+
+        $sales_diff_percent = $prev_sales > 0 ? ($sales_diff / $prev_sales) * 100 : 0;
+        $points_diff_percent = $prev_points > 0 ? ($points_diff / $prev_points) * 100 : 0;
+
+        $member_ranking[] = [
+            'member_id' => $member['member_id'],
+            'member_name' => $member['member_name'],
+            'team_name' => $member['team_name'],
+            'total_sales' => (float)$member['total_sales'],
+            'total_points' => (float)$member['total_points'],
+            'prev_sales' => $prev_sales,
+            'prev_points' => $prev_points,
+            'sales_diff' => $sales_diff,
+            'points_diff' => $points_diff,
+            'sales_diff_percent' => $sales_diff_percent,
+            'points_diff_percent' => $points_diff_percent
+        ];
+    }
+
+    // ===== チームランキング（売上・ポイント・前期間比較込み）TOP10 =====
+    $where_team_ranking = "sr.tenant_id = :tenant_id AND sr.date BETWEEN :start_date AND :end_date AND sr.approval_status = '承認済み'";
+    $where_team_prev_ranking = "sr.tenant_id = :tenant_id AND sr.date BETWEEN :prev_start_date AND :prev_end_date AND sr.approval_status = '承認済み'";
+
+    // チームフィルタがある場合は適用
+    if (!empty($team_ids)) {
+        $team_placeholders = implode(',', array_map(fn($i) => ":team_id_team_$i", array_keys($team_ids)));
+        $where_team_ranking .= " AND t.team_id IN ($team_placeholders)";
+        $where_team_prev_ranking .= " AND t.team_id IN ($team_placeholders)";
+    }
+
+    // メンバーフィルタがある場合は適用（そのメンバーが所属するチームのみ）
+    if (!empty($member_ids)) {
+        $member_placeholders = implode(',', array_map(fn($i) => ":rank_team_member_id_$i", array_keys($member_ids)));
+        $where_team_ranking .= " AND sr.member_id IN ($member_placeholders)";
+        $where_team_prev_ranking .= " AND sr.member_id IN ($member_placeholders)";
+    }
+
+    // 現在期間のチームランキング
+    $sql_team_ranking = "
+        SELECT
+            t.team_id,
+            t.team_name,
+            SUM(sr.quantity * sr.unit_price) as total_sales,
+            SUM(sr.final_point) as total_points
+        FROM sales_records sr
+        INNER JOIN members m ON sr.tenant_id = m.tenant_id AND sr.member_id = m.member_id
+        INNER JOIN teams t ON m.tenant_id = t.tenant_id AND m.team_id = t.team_id
+        WHERE $where_team_ranking
+        GROUP BY t.team_id, t.team_name
+        ORDER BY total_sales DESC
+        LIMIT 10
+    ";
+
+    $stmt = $pdo->prepare($sql_team_ranking);
+    $stmt->bindValue(':tenant_id', $tenant_id);
+    $stmt->bindValue(':start_date', $start_date);
+    $stmt->bindValue(':end_date', $end_date);
+    foreach ($team_ids as $i => $team_id) {
+        $stmt->bindValue(":team_id_team_$i", $team_id);
+    }
+    foreach ($member_ids as $i => $member_id) {
+        $stmt->bindValue(":rank_team_member_id_$i", $member_id);
+    }
+    $stmt->execute();
+    $team_ranking_current = $stmt->fetchAll();
+
+    // 前期間のチームランキングデータ
+    $sql_team_ranking_prev = "
+        SELECT
+            t.team_id,
+            SUM(sr.quantity * sr.unit_price) as total_sales,
+            SUM(sr.final_point) as total_points
+        FROM sales_records sr
+        INNER JOIN members m ON sr.tenant_id = m.tenant_id AND sr.member_id = m.member_id
+        INNER JOIN teams t ON m.tenant_id = t.tenant_id AND m.team_id = t.team_id
+        WHERE $where_team_prev_ranking
+        GROUP BY t.team_id
+    ";
+
+    $stmt = $pdo->prepare($sql_team_ranking_prev);
+    $stmt->bindValue(':tenant_id', $tenant_id);
+    $stmt->bindValue(':prev_start_date', $prev_start_date);
+    $stmt->bindValue(':prev_end_date', $prev_end_date);
+    foreach ($team_ids as $i => $team_id) {
+        $stmt->bindValue(":team_id_team_$i", $team_id);
+    }
+    foreach ($member_ids as $i => $member_id) {
+        $stmt->bindValue(":rank_team_member_id_$i", $member_id);
+    }
+    $stmt->execute();
+    $team_ranking_prev_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // 前期間データをteam_idでマッピング
+    $team_prev_data_map = [];
+    foreach ($team_ranking_prev_data as $prev) {
+        $team_prev_data_map[$prev['team_id']] = $prev;
+    }
+
+    // 現在期間ランキングに前期間比較を追加
+    $team_ranking = [];
+    foreach ($team_ranking_current as $team) {
+        $prev = $team_prev_data_map[$team['team_id']] ?? null;
+        $prev_sales = $prev ? (float)$prev['total_sales'] : 0;
+        $prev_points = $prev ? (float)$prev['total_points'] : 0;
+
+        $sales_diff = (float)$team['total_sales'] - $prev_sales;
+        $points_diff = (float)$team['total_points'] - $prev_points;
+
+        $sales_diff_percent = $prev_sales > 0 ? ($sales_diff / $prev_sales) * 100 : 0;
+        $points_diff_percent = $prev_points > 0 ? ($points_diff / $prev_points) * 100 : 0;
+
+        $team_ranking[] = [
+            'team_id' => $team['team_id'],
+            'team_name' => $team['team_name'],
+            'total_sales' => (float)$team['total_sales'],
+            'total_points' => (float)$team['total_points'],
+            'prev_sales' => $prev_sales,
+            'prev_points' => $prev_points,
+            'sales_diff' => $sales_diff,
+            'points_diff' => $points_diff,
+            'sales_diff_percent' => $sales_diff_percent,
+            'points_diff_percent' => $points_diff_percent
+        ];
+    }
 
     // レスポンス
     echo json_encode([
@@ -352,8 +531,8 @@ try {
         'trend' => $trend_data,
         'products' => $product_data,
         'rankings' => [
-            'sales' => $sales_ranking,
-            'points' => $points_ranking
+            'members' => $member_ranking,
+            'teams' => $team_ranking
         ],
         'filters' => [
             'start_date' => $start_date,

@@ -25,17 +25,62 @@ requireAdmin();
     <!-- ナビゲーション -->
     <nav class="flex-1 overflow-y-auto py-4">
       <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>ダッシュボード</span>
+        <span>ランキングサマリー</span>
       </a>
-      <a href="/admin/masters/members.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>マスタ管理</span>
-      </a>
+      <!-- マスタ管理ドロップダウン -->
+      <div>
+        <button onclick="toggleMasterMenu()" class="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+          <span>マスタ管理</span>
+          <svg id="masterArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="masterSubmenu" class="hidden bg-gray-50">
+          <a href="/admin/masters/members.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>メンバー</span>
+          </a>
+          <a href="/admin/masters/teams.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>チーム</span>
+          </a>
+          <a href="/admin/masters/products.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>商品</span>
+          </a>
+          <a href="/admin/masters/actions.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>アクション</span>
+          </a>
+          <a href="/admin/masters/tasks.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>タスク</span>
+          </a>
+          <a href="/admin/masters/events.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>イベント</span>
+          </a>
+        </div>
+      </div>
       <a href="/admin/sales/input.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>売上管理</span>
       </a>
-      <a href="/admin/approvals.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>承認管理</span>
-      </a>
+
+      <!-- 承認管理ドロップダウン -->
+      <div>
+        <button onclick="toggleApprovalMenu()" class="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+          <span>承認管理</span>
+          <svg id="approvalArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="approvalSubmenu" class="hidden bg-gray-50">
+          <a href="/admin/approvals.php?tab=sales" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>売上承認</span>
+          </a>
+          <a href="/admin/approvals.php?tab=actions" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>アクション承認</span>
+          </a>
+          <a href="/admin/approvals.php?tab=tasks" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>タスク承認</span>
+          </a>
+        </div>
+      </div>
+
       <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>実績管理</span>
       </a>
@@ -176,6 +221,34 @@ requireAdmin();
   </div>
 
   <script>
+    // マスタ管理ドロップダウンの開閉
+    function toggleMasterMenu() {
+      const submenu = document.getElementById('masterSubmenu');
+      const arrow = document.getElementById('masterArrow');
+
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // 承認管理ドロップダウンの開閉
+    function toggleApprovalMenu() {
+      const submenu = document.getElementById('approvalSubmenu');
+      const arrow = document.getElementById('approvalArrow');
+
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
     let currentMode = 'create';
 
     // 初期読み込み

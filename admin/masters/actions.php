@@ -25,17 +25,64 @@ requireAdmin();
     <!-- ナビゲーション -->
     <nav class="flex-1 overflow-y-auto py-4">
       <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>ダッシュボード</span>
+        <span>ランキングサマリー</span>
       </a>
-      <a href="/admin/masters/members.php" class="flex items-center px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
-        <span class="font-medium">マスタ管理</span>
-      </a>
+
+      <!-- マスタ管理ドロップダウン -->
+      <div>
+        <button onclick="toggleMasterMenu()" class="w-full flex items-center justify-between px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
+          <span class="font-medium">マスタ管理</span>
+          <svg id="masterArrow" class="w-4 h-4 transition-transform duration-200 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="masterSubmenu" class="bg-gray-50">
+          <a href="/admin/masters/members.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>メンバー</span>
+          </a>
+          <a href="/admin/masters/teams.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>チーム</span>
+          </a>
+          <a href="/admin/masters/products.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>商品</span>
+          </a>
+          <a href="/admin/masters/actions.php" class="flex items-center px-6 py-2 pl-12 text-sm text-blue-600 font-medium bg-blue-50 hover:bg-blue-100">
+            <span>アクション</span>
+          </a>
+          <a href="/admin/masters/tasks.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>タスク</span>
+          </a>
+          <a href="/admin/masters/events.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>イベント</span>
+          </a>
+        </div>
+      </div>
+
       <a href="/admin/sales/input.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>売上管理</span>
       </a>
-      <a href="/admin/approvals.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>承認管理</span>
-      </a>
+
+      <!-- 承認管理ドロップダウン -->
+      <div>
+        <button onclick="toggleApprovalMenu()" class="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+          <span>承認管理</span>
+          <svg id="approvalArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="approvalSubmenu" class="hidden bg-gray-50">
+          <a href="/admin/approvals.php?tab=sales" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>売上承認</span>
+          </a>
+          <a href="/admin/approvals.php?tab=actions" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>アクション承認</span>
+          </a>
+          <a href="/admin/approvals.php?tab=tasks" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>タスク承認</span>
+          </a>
+        </div>
+      </div>
+
       <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>実績管理</span>
       </a>
@@ -59,19 +106,6 @@ requireAdmin();
     <header class="bg-white shadow-sm border-b">
       <div class="px-8 py-6">
         <h2 class="text-2xl font-bold text-gray-800">アクションマスタ</h2>
-      </div>
-      <!-- サブナビゲーション（マスタ切り替え） -->
-      <div class="bg-gray-50 border-t">
-        <div class="px-8">
-          <div class="flex space-x-6">
-            <a href="/admin/masters/members.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">メンバー</a>
-            <a href="/admin/masters/teams.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">チーム</a>
-            <a href="/admin/masters/products.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">商品</a>
-            <a href="/admin/masters/actions.php" class="py-3 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">アクション</a>
-            <a href="/admin/masters/tasks.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">タスク</a>
-            <a href="/admin/masters/events.php" class="py-3 px-2 text-gray-600 hover:text-gray-900">イベント</a>
-          </div>
-        </div>
       </div>
     </header>
 
@@ -140,12 +174,12 @@ requireAdmin();
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">開始日 <span class="text-red-500">*</span></label>
-            <input type="date" id="startDate" name="start_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            <label class="block text-sm font-medium text-gray-700 mb-1">開始日時 <span class="text-red-500">*</span></label>
+            <input type="datetime-local" id="startDate" name="start_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">終了日 <span class="text-red-500">*</span></label>
-            <input type="date" id="endDate" name="end_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            <label class="block text-sm font-medium text-gray-700 mb-1">終了日時 <span class="text-red-500">*</span></label>
+            <input type="datetime-local" id="endDate" name="end_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
           </div>
         </div>
 
@@ -247,6 +281,34 @@ requireAdmin();
 
   <script>
     let currentMode = 'create';
+
+    // マスター管理メニューの開閉
+    function toggleMasterMenu() {
+      const submenu = document.getElementById('masterSubmenu');
+      const arrow = document.getElementById('masterArrow');
+
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // 承認管理ドロップダウンの開閉
+    function toggleApprovalMenu() {
+      const submenu = document.getElementById('approvalSubmenu');
+      const arrow = document.getElementById('approvalArrow');
+
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
 
     // 初期読み込み
     document.addEventListener('DOMContentLoaded', () => {
@@ -372,8 +434,9 @@ requireAdmin();
         document.getElementById('actionId').value = data.action_id;
         document.getElementById('actionName').value = data.action_name;
         document.getElementById('repeatType').value = data.repeat_type || '単発';
-        document.getElementById('startDate').value = data.start_date || '';
-        document.getElementById('endDate').value = data.end_date || '';
+        // datetime形式をdatetime-local形式に変換（YYYY-MM-DDTHH:MM）
+        document.getElementById('startDate').value = data.start_date ? data.start_date.substring(0, 16) : '';
+        document.getElementById('endDate').value = data.end_date ? data.end_date.substring(0, 16) : '';
         document.getElementById('target').value = data.target;
         document.getElementById('point').value = data.point;
         document.getElementById('approvalRequired').value = data.approval_required;
@@ -430,11 +493,17 @@ requireAdmin();
         }
       }
 
+      // datetime-local形式の値をdatetime形式に変換（YYYY-MM-DD HH:MM:SS）
+      const startDateTime = formData.get('start_date');
+      const endDateTime = formData.get('end_date');
+      const startDate = startDateTime ? startDateTime.replace('T', ' ') + ':00' : '';
+      const endDate = endDateTime ? endDateTime.replace('T', ' ') + ':00' : '';
+
       const data = {
         action_name: formData.get('action_name'),
         repeat_type: repeatType,
-        start_date: formData.get('start_date'),
-        end_date: formData.get('end_date'),
+        start_date: startDate,
+        end_date: endDate,
         days_of_week: daysOfWeek,
         day_of_month: dayOfMonth,
         target: formData.get('target'),

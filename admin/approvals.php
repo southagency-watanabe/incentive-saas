@@ -25,17 +25,62 @@ requireAdmin();
     <!-- ナビゲーション -->
     <nav class="flex-1 overflow-y-auto py-4">
       <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>ダッシュボード</span>
+        <span>ランキングサマリー</span>
       </a>
-      <a href="/admin/masters/members.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>マスタ管理</span>
-      </a>
+      <!-- マスタ管理ドロップダウン -->
+      <div>
+        <button onclick="toggleMasterMenu()" class="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+          <span>マスタ管理</span>
+          <svg id="masterArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="masterSubmenu" class="hidden bg-gray-50">
+          <a href="/admin/masters/members.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>メンバー</span>
+          </a>
+          <a href="/admin/masters/teams.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>チーム</span>
+          </a>
+          <a href="/admin/masters/products.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>商品</span>
+          </a>
+          <a href="/admin/masters/actions.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>アクション</span>
+          </a>
+          <a href="/admin/masters/tasks.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>タスク</span>
+          </a>
+          <a href="/admin/masters/events.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>イベント</span>
+          </a>
+        </div>
+      </div>
       <a href="/admin/sales/input.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>売上管理</span>
       </a>
-      <a href="/admin/approvals.php" class="flex items-center px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
-        <span class="font-medium">承認管理</span>
-      </a>
+
+      <!-- 承認管理ドロップダウン -->
+      <div>
+        <button onclick="toggleApprovalMenu()" class="w-full flex items-center justify-between px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
+          <span class="font-medium">承認管理</span>
+          <svg id="approvalArrow" class="w-4 h-4 transition-transform duration-200 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="approvalSubmenu" class="bg-gray-50">
+          <a href="/admin/approvals.php?tab=sales" class="flex items-center px-6 py-2 pl-12 text-sm text-blue-600 font-medium bg-blue-50 hover:bg-blue-100">
+            <span>売上承認</span>
+          </a>
+          <a href="/admin/approvals.php?tab=actions" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>アクション承認</span>
+          </a>
+          <a href="/admin/approvals.php?tab=tasks" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>タスク承認</span>
+          </a>
+        </div>
+      </div>
+
       <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>実績管理</span>
       </a>
@@ -58,26 +103,9 @@ requireAdmin();
     <!-- ページヘッダー -->
     <header class="bg-white shadow-sm border-b">
       <div class="px-8 py-6">
-        <h2 class="text-2xl font-bold text-gray-800">承認管理</h2>
+        <h2 class="text-2xl font-bold text-gray-800" id="pageTitle">売上承認</h2>
       </div>
     </header>
-
-    <!-- タブ -->
-    <div class="bg-gray-50 border-b">
-      <div class="px-8">
-        <div class="flex space-x-6">
-          <button id="tabSales" onclick="switchTab('sales')" class="py-3 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">
-            売上承認
-          </button>
-          <button id="tabActions" onclick="switchTab('actions')" class="py-3 px-2 text-gray-600 hover:text-gray-900">
-            アクション承認
-          </button>
-          <button id="tabTasks" onclick="switchTab('tasks')" class="py-3 px-2 text-gray-600 hover:text-gray-900">
-            タスク承認
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- メインコンテンツ -->
     <main class="px-8 py-8">
@@ -95,14 +123,30 @@ requireAdmin();
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">日付</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">メンバー</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">商品</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">数量</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">単価</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">金額</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">付与pt</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">承認状態</th>
+              <th onclick="sortTable('date')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100">
+                日付 <span id="sort-date"></span>
+              </th>
+              <th onclick="sortTable('member_name')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100">
+                メンバー <span id="sort-member_name"></span>
+              </th>
+              <th onclick="sortTable('product_name')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100">
+                商品 <span id="sort-product_name"></span>
+              </th>
+              <th onclick="sortTable('quantity')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100">
+                数量 <span id="sort-quantity"></span>
+              </th>
+              <th onclick="sortTable('unit_price')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100">
+                単価 <span id="sort-unit_price"></span>
+              </th>
+              <th onclick="sortTable('amount')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100">
+                金額 <span id="sort-amount"></span>
+              </th>
+              <th onclick="sortTable('final_point')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100">
+                付与pt <span id="sort-final_point"></span>
+              </th>
+              <th onclick="sortTable('approval_status')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100">
+                承認状態 <span id="sort-approval_status"></span>
+              </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
             </tr>
           </thead>
@@ -158,32 +202,65 @@ requireAdmin();
   </div>
 
   <script>
+    // マスタ管理ドロップダウンの開閉
+    function toggleMasterMenu() {
+      const submenu = document.getElementById('masterSubmenu');
+      const arrow = document.getElementById('masterArrow');
+
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // 承認管理ドロップダウンの開閉
+    function toggleApprovalMenu() {
+      const submenu = document.getElementById('approvalSubmenu');
+      const arrow = document.getElementById('approvalArrow');
+
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
     let currentTab = 'sales';
+    let currentSalesData = [];
+    let currentSortKey = 'date';
+    let currentSortOrder = 'desc';
 
     // 初期読み込み
     document.addEventListener('DOMContentLoaded', () => {
-      loadSales();
+      // URLパラメータからタブを取得
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      if (tabParam) {
+        currentTab = tabParam;
+      }
+
+      // タブに応じたコンテンツを表示
+      switchTab(currentTab);
     });
 
     // タブ切り替え
     function switchTab(tab) {
       currentTab = tab;
 
-      // タブボタンのスタイル更新
-      document.getElementById('tabSales').classList.toggle('border-blue-500', tab === 'sales');
-      document.getElementById('tabSales').classList.toggle('text-blue-600', tab === 'sales');
-      document.getElementById('tabSales').classList.toggle('font-medium', tab === 'sales');
-      document.getElementById('tabSales').classList.toggle('text-gray-600', tab !== 'sales');
-
-      document.getElementById('tabActions').classList.toggle('border-blue-500', tab === 'actions');
-      document.getElementById('tabActions').classList.toggle('text-blue-600', tab === 'actions');
-      document.getElementById('tabActions').classList.toggle('font-medium', tab === 'actions');
-      document.getElementById('tabActions').classList.toggle('text-gray-600', tab !== 'actions');
-
-      document.getElementById('tabTasks').classList.toggle('border-blue-500', tab === 'tasks');
-      document.getElementById('tabTasks').classList.toggle('text-blue-600', tab === 'tasks');
-      document.getElementById('tabTasks').classList.toggle('font-medium', tab === 'tasks');
-      document.getElementById('tabTasks').classList.toggle('text-gray-600', tab !== 'tasks');
+      // ページタイトル更新
+      const pageTitle = document.getElementById('pageTitle');
+      if (tab === 'sales') {
+        pageTitle.textContent = '売上承認';
+      } else if (tab === 'actions') {
+        pageTitle.textContent = 'アクション承認';
+      } else if (tab === 'tasks') {
+        pageTitle.textContent = 'タスク承認';
+      }
 
       // コンテンツ表示切り替え
       document.getElementById('salesTab').classList.toggle('hidden', tab !== 'sales');
@@ -203,7 +280,8 @@ requireAdmin();
         const result = await response.json();
 
         if (result.success) {
-          renderSalesTable(result.data);
+          currentSalesData = result.data;
+          applySortAndRender();
         } else {
           alert('データの取得に失敗しました。');
         }
@@ -211,6 +289,84 @@ requireAdmin();
         console.error(error);
         alert('エラーが発生しました。');
       }
+    }
+
+    // ソート機能
+    function sortTable(key) {
+      // 同じカラムをクリックした場合は昇順/降順を切り替え
+      if (currentSortKey === key) {
+        currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSortKey = key;
+        currentSortOrder = 'asc';
+      }
+
+      applySortAndRender();
+    }
+
+    // ソート適用とレンダリング
+    function applySortAndRender() {
+      // データのソート
+      const sortedData = [...currentSalesData].sort((a, b) => {
+        let valA, valB;
+
+        switch (currentSortKey) {
+          case 'date':
+            valA = a.date;
+            valB = b.date;
+            break;
+          case 'member_name':
+            valA = a.member_name;
+            valB = b.member_name;
+            break;
+          case 'product_name':
+            valA = a.product_name;
+            valB = b.product_name;
+            break;
+          case 'quantity':
+            valA = parseFloat(a.quantity);
+            valB = parseFloat(b.quantity);
+            break;
+          case 'unit_price':
+            valA = parseFloat(a.unit_price);
+            valB = parseFloat(b.unit_price);
+            break;
+          case 'amount':
+            valA = parseFloat(a.quantity) * parseFloat(a.unit_price);
+            valB = parseFloat(b.quantity) * parseFloat(b.unit_price);
+            break;
+          case 'final_point':
+            valA = parseInt(a.final_point);
+            valB = parseInt(b.final_point);
+            break;
+          case 'approval_status':
+            valA = a.approval_status;
+            valB = b.approval_status;
+            break;
+          default:
+            return 0;
+        }
+
+        // 比較
+        let result = 0;
+        if (typeof valA === 'string') {
+          result = valA.localeCompare(valB);
+        } else {
+          result = valA - valB;
+        }
+
+        return currentSortOrder === 'asc' ? result : -result;
+      });
+
+      // ソートインジケーター更新
+      document.querySelectorAll('[id^="sort-"]').forEach(el => el.textContent = '');
+      const indicator = document.getElementById(`sort-${currentSortKey}`);
+      if (indicator) {
+        indicator.textContent = currentSortOrder === 'asc' ? '▲' : '▼';
+      }
+
+      // テーブルレンダリング
+      renderSalesTable(sortedData);
     }
 
     // テーブル描画
