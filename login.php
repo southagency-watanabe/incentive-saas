@@ -60,10 +60,8 @@ if (isset($_GET['error'])) {
           id="tenant_id"
           name="tenant_id"
           value="DEMO01"
-          placeholder="DEMO01"
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           required>
-        <p class="mt-1 text-xs text-gray-500">開発用: DEMO01</p>
       </div>
 
       <!-- ログインID -->
@@ -76,10 +74,8 @@ if (isset($_GET['error'])) {
           id="login_id"
           name="login_id"
           value="takahama"
-          placeholder="takahama"
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           required>
-        <p class="mt-1 text-xs text-gray-500">開発用: takahama（高濱 太郎）</p>
       </div>
 
       <!-- PIN -->
@@ -94,10 +90,8 @@ if (isset($_GET['error'])) {
           maxlength="4"
           pattern="[0-9]{4}"
           value="1111"
-          placeholder="1111"
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           required>
-        <p class="mt-1 text-xs text-gray-500">開発用: 1111</p>
       </div>
 
       <!-- ログインボタン -->
@@ -136,14 +130,22 @@ if (isset($_GET['error'])) {
 
         const result = await response.json();
 
+        // デバッグ: レスポンス内容をコンソールに出力
+        console.log('Auth response:', result);
+        console.log('Success:', result.success);
+        console.log('Redirect:', result.redirect);
+
         if (result.success) {
           // ログイン成功 - リダイレクト
+          console.log('Redirecting to:', result.redirect);
           window.location.href = result.redirect;
         } else {
           // エラー表示
+          console.log('Login failed:', result.message);
           window.location.href = '/login.php?error=invalid';
         }
       } catch (error) {
+        console.error('Login error:', error);
         alert('ログイン処理中にエラーが発生しました。');
       }
     });

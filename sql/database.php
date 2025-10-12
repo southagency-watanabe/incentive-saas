@@ -1,9 +1,9 @@
 <?php
-// データベース接続設定（ローカル環境用）
+// データベース接続設定
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'incentive_local');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_NAME', 'xs063745_incentive');
+define('DB_USER', 'xs063745_incen');
+define('DB_PASS', 'Ginowan29');
 define('DB_CHARSET', 'utf8mb4');
 
 // PDO接続を取得する関数
@@ -14,7 +14,7 @@ function getDB()
   if ($pdo === null) {
     try {
       $pdo = new PDO(
-        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
+        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET,
         DB_USER,
         DB_PASS,
         [
@@ -23,9 +23,6 @@ function getDB()
           PDO::ATTR_EMULATE_PREPARES => false,
         ]
       );
-      
-      // 文字セットを明示的に設定
-      $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
     } catch (PDOException $e) {
       // 本番環境ではエラー詳細を隠す
       error_log('Database connection failed: ' . $e->getMessage());

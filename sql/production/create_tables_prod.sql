@@ -1,5 +1,5 @@
--- インセンティブSaaS データベーステーブル作成スクリプト
-USE incentive_local;
+-- インセンティブSaaS データベーステーブル作成スクリプト（本番環境用）
+USE xs063745_incentive;
 
 -- テナントテーブル
 CREATE TABLE IF NOT EXISTS tenants (
