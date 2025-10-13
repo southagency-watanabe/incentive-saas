@@ -2,8 +2,6 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/session.php';
 
-// セッションを最初に開始
-startSession();
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -69,6 +67,18 @@ try {
     echo json_encode(['success' => false, 'message' => '認証に失敗しました。']);
     exit;
   }
+
+  // 既存のセッションを破棄（多重ログイン防止）
+  if (isset($_SESSION['token'])) {
+    destroySession();
+  }
+
+  // このユーザーの古いセッションをDBから削除
+  $stmt = $pdo->prepare("DELETE FROM sessions WHERE tenant_id = :tenant_id AND member_id = :member_id");
+  $stmt->execute([
+    'tenant_id' => $member['tenant_id'],
+    'member_id' => $member['member_id']
+  ]);
 
   // セッション作成
   $token = createSession(

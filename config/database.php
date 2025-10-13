@@ -64,10 +64,11 @@ function getDB()
       // 本番環境ではエラー詳細を隠す
       error_log('Database connection failed: ' . $e->getMessage());
 
+      // die()ではなく例外を再スローして、呼び出し側で適切にハンドリングできるようにする
       if (DEBUG_MODE === '1') {
-        die('データベース接続エラー: ' . $e->getMessage());
+        throw new PDOException('データベース接続エラー: ' . $e->getMessage(), (int)$e->getCode(), $e);
       } else {
-        die('データベース接続エラーが発生しました。');
+        throw new PDOException('データベース接続エラーが発生しました。', (int)$e->getCode(), $e);
       }
     }
   }

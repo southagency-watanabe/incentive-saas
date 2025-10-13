@@ -7,6 +7,17 @@ require_once __DIR__ . '/../config/database.php';
 function startSession()
 {
   if (session_status() === PHP_SESSION_NONE) {
+    // セッション保存パスを設定（書き込み可能なディレクトリ）
+    $sessionPath = __DIR__ . '/../tmp/sessions';
+    if (!is_dir($sessionPath)) {
+      mkdir($sessionPath, 0777, true);
+    }
+    // 既存のディレクトリのパーミッションも確認
+    if (is_dir($sessionPath) && !is_writable($sessionPath)) {
+      chmod($sessionPath, 0777);
+    }
+    session_save_path($sessionPath);
+
     // セッションのセキュリティ設定
     ini_set('session.cookie_httponly', '1');
 
@@ -25,7 +36,38 @@ function startSession()
     }
 
     session_start();
+
+    // デバッグログ
+    error_log('startSession - Session started, ID: ' . session_id());
+    error_log('startSession - Cookie secure: ' . $cookieSecure);
+    error_log('startSession - Cookie domain: ' . ($cookieDomain ?: '(none)'));
+  } else {
+    error_log('startSession - Session already active, ID: ' . session_id());
   }
+}
+
+// APIリクエストかどうかを判定
+function isApiRequest()
+{
+  // URLが /api/ で始まる場合
+  $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+  if (strpos($requestUri, '/api/') === 0) {
+    return true;
+  }
+
+  // Content-Typeがapplication/jsonの場合
+  $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+  if (strpos($contentType, 'application/json') !== false) {
+    return true;
+  }
+
+  // Acceptヘッダーにapplication/jsonが含まれる場合
+  $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+  if (strpos($accept, 'application/json') !== false) {
+    return true;
+  }
+
+  return false;
 }
 
 // ログインチェック（リダイレクトあり）
@@ -33,7 +75,19 @@ function requireLogin()
 {
   startSession();
 
+  // デバッグログ
+  error_log('requireLogin - Session ID: ' . session_id());
+  error_log('requireLogin - $_SESSION contents: ' . json_encode($_SESSION));
+  error_log('requireLogin - token isset: ' . (isset($_SESSION['token']) ? 'yes' : 'no'));
+
   if (!isset($_SESSION['token']) || !isset($_SESSION['tenant_id']) || !isset($_SESSION['member_id'])) {
+    error_log('requireLogin - Session validation failed: missing session variables');
+    if (isApiRequest()) {
+      header('Content-Type: application/json; charset=utf-8');
+      http_response_code(401);
+      echo json_encode(['success' => false, 'message' => '認証が必要です。', 'error' => 'unauthorized']);
+      exit;
+    }
     header('Location: /login.php');
     exit;
   }
@@ -41,6 +95,12 @@ function requireLogin()
   // セッションの有効性をDBで確認
   if (!validateSession($_SESSION['token'])) {
     destroySession();
+    if (isApiRequest()) {
+      header('Content-Type: application/json; charset=utf-8');
+      http_response_code(401);
+      echo json_encode(['success' => false, 'message' => 'セッションの有効期限が切れました。', 'error' => 'session_expired']);
+      exit;
+    }
     header('Location: /login.php?error=session_expired');
     exit;
   }
@@ -55,6 +115,12 @@ function requireAdmin()
   requireLogin();
 
   if ($_SESSION['role'] !== 'admin') {
+    if (isApiRequest()) {
+      header('Content-Type: application/json; charset=utf-8');
+      http_response_code(403);
+      echo json_encode(['success' => false, 'message' => 'アクセス権限がありません。', 'error' => 'forbidden']);
+      exit;
+    }
     http_response_code(403);
     die('アクセス権限がありません。');
   }
@@ -64,6 +130,10 @@ function requireAdmin()
 function createSession($tenant_id, $member_id, $role, $name)
 {
   $pdo = getDB();
+
+  // タイムゾーンを設定
+  date_default_timezone_set('Asia/Tokyo');
+  $pdo->exec("SET time_zone = '+09:00'");
 
   // トークン生成
   $token = bin2hex(random_bytes(32));
@@ -93,6 +163,16 @@ function createSession($tenant_id, $member_id, $role, $name)
   $_SESSION['role'] = $role;
   $_SESSION['name'] = $name;
 
+  // デバッグログ
+  error_log('createSession - Session created for member: ' . $member_id);
+  error_log('createSession - Session ID: ' . session_id());
+  error_log('createSession - Session data before save: ' . json_encode($_SESSION));
+
+  // セッションデータを明示的に保存（この後はセッション操作しない）
+  session_write_close();
+
+  error_log('createSession - Session data saved to file');
+
   return $token;
 }
 
@@ -102,13 +182,22 @@ function validateSession($token)
   $pdo = getDB();
 
   $stmt = $pdo->prepare("
-        SELECT * FROM sessions 
-        WHERE token = :token 
+        SELECT * FROM sessions
+        WHERE token = :token
         AND expires_at > NOW()
     ");
 
   $stmt->execute(['token' => $token]);
   $session = $stmt->fetch();
+
+  // デバッグログ
+  if (DEBUG_MODE === '1') {
+    error_log('validateSession - token: ' . substr($token, 0, 10) . '...');
+    error_log('validateSession - result: ' . ($session ? 'found' : 'not found'));
+    if ($session) {
+      error_log('validateSession - expires_at: ' . $session['expires_at']);
+    }
+  }
 
   return $session !== false;
 }

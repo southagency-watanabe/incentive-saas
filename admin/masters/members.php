@@ -243,6 +243,26 @@ $teams = $stmt->fetchAll();
     let currentMode = 'create';
     let loginIdCheckTimeout = null;
 
+    // API呼び出しのヘルパー関数（認証エラーハンドリング付き）
+    async function fetchAPI(url, options = {}) {
+      const response = await fetch(url, options);
+
+      // 401エラー（認証エラー）の場合はログインページにリダイレクト
+      if (response.status === 401) {
+        alert('セッションの有効期限が切れました。再度ログインしてください。');
+        window.location.href = '/login.php';
+        throw new Error('Unauthorized');
+      }
+
+      // 403エラー（権限エラー）の場合
+      if (response.status === 403) {
+        alert('アクセス権限がありません。');
+        throw new Error('Forbidden');
+      }
+
+      return response;
+    }
+
     // マスター管理メニューの開閉
     function toggleMasterMenu() {
       const submenu = document.getElementById('masterSubmenu');
@@ -288,7 +308,7 @@ $teams = $stmt->fetchAll();
           refreshBtn.classList.add('opacity-50', 'cursor-not-allowed');
         }
 
-        const response = await fetch('/api/members.php');
+        const response = await fetchAPI('/api/members.php');
         const result = await response.json();
 
         if (result.success) {
@@ -401,7 +421,7 @@ $teams = $stmt->fetchAll();
           const url = `/api/members/check-login-id.php?login_id=${encodeURIComponent(loginId)}${excludeId ? '&exclude=' + excludeId : ''}`;
 
           try {
-            const response = await fetch(url);
+            const response = await fetchAPI(url);
             const result = await response.json();
 
             const message = document.getElementById('loginIdMessage');
@@ -444,7 +464,7 @@ $teams = $stmt->fetchAll();
           method = 'PUT';
         }
 
-        const response = await fetch(url, {
+        const response = await fetchAPI(url, {
           method: method,
           headers: {
             'Content-Type': 'application/json'
@@ -474,7 +494,7 @@ $teams = $stmt->fetchAll();
       }
 
       try {
-        const response = await fetch(`/api/members.php?id=${memberId}`, {
+        const response = await fetchAPI(`/api/members.php?id=${memberId}`, {
           method: 'DELETE'
         });
 
@@ -499,7 +519,7 @@ $teams = $stmt->fetchAll();
       }
 
       try {
-        const response = await fetch('/api/members/duplicate.php', {
+        const response = await fetchAPI('/api/members/duplicate.php', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
