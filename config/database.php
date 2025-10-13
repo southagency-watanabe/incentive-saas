@@ -1,10 +1,44 @@
 <?php
-// データベース接続設定（本番環境用）
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'xs063745_incentive');
-define('DB_USER', 'xs063745_incen');
-define('DB_PASS', 'Ginowan29');
-define('DB_CHARSET', 'utf8mb4');
+// 環境変数を読み込む関数
+function loadEnv($filePath = __DIR__ . '/../.env')
+{
+  if (!file_exists($filePath)) {
+    return;
+  }
+
+  $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+  foreach ($lines as $line) {
+    // コメント行をスキップ
+    if (strpos(trim($line), '#') === 0) {
+      continue;
+    }
+
+    // KEY=VALUE 形式をパース
+    if (strpos($line, '=') !== false) {
+      list($key, $value) = explode('=', $line, 2);
+      $key = trim($key);
+      $value = trim($value);
+
+      // 既存の環境変数を上書きしない
+      if (!array_key_exists($key, $_ENV)) {
+        $_ENV[$key] = $value;
+        putenv("$key=$value");
+      }
+    }
+  }
+}
+
+// .envファイルを読み込み
+loadEnv();
+
+// 環境変数からデータベース設定を取得（デフォルト値付き）
+define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+define('DB_NAME', getenv('DB_NAME') ?: 'incentive_local');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') ?: '');
+define('ENVIRONMENT', getenv('ENVIRONMENT') ?: 'local');
+define('DEBUG_MODE', getenv('DEBUG_MODE') ?: '0');
+
 
 // PDO接続を取得する関数
 function getDB()
@@ -29,7 +63,12 @@ function getDB()
     } catch (PDOException $e) {
       // 本番環境ではエラー詳細を隠す
       error_log('Database connection failed: ' . $e->getMessage());
-      die('データベース接続エラーが発生しました。');
+
+      if (DEBUG_MODE === '1') {
+        die('データベース接続エラー: ' . $e->getMessage());
+      } else {
+        die('データベース接続エラーが発生しました。');
+      }
     }
   }
 

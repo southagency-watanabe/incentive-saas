@@ -1,8 +1,11 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
-
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/session.php';
+
+// セッションを最初に開始
+startSession();
+
+header('Content-Type: application/json; charset=utf-8');
 
 // POSTリクエストのみ受け付け
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

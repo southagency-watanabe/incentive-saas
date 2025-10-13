@@ -7,6 +7,23 @@ require_once __DIR__ . '/../config/database.php';
 function startSession()
 {
   if (session_status() === PHP_SESSION_NONE) {
+    // セッションのセキュリティ設定
+    ini_set('session.cookie_httponly', '1');
+
+    // 環境変数から設定を取得
+    $cookieSecure = getenv('SESSION_COOKIE_SECURE') ?: '0';
+    $cookieDomain = getenv('SESSION_COOKIE_DOMAIN') ?: '';
+
+    ini_set('session.cookie_secure', $cookieSecure);
+    ini_set('session.cookie_samesite', 'Lax');
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.cookie_path', '/');
+
+    // cookie_domainが設定されている場合のみ適用
+    if ($cookieDomain !== '') {
+      ini_set('session.cookie_domain', $cookieDomain);
+    }
+
     session_start();
   }
 }
@@ -69,6 +86,7 @@ function createSession($tenant_id, $member_id, $role, $name)
 
   // PHPセッションに保存
   startSession();
+
   $_SESSION['token'] = $token;
   $_SESSION['tenant_id'] = $tenant_id;
   $_SESSION['member_id'] = $member_id;
