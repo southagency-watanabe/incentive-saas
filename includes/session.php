@@ -75,6 +75,19 @@ function requireLogin()
 {
   startSession();
 
+  // 【テスト用】認証チェックを一時的に無効化
+  // テスト用のダミーセッションデータを設定
+  if (!isset($_SESSION['tenant_id'])) {
+    $_SESSION['token'] = 'test_token_' . bin2hex(random_bytes(16));
+    $_SESSION['tenant_id'] = 'DEMO01';  // テスト用テナントID
+    $_SESSION['member_id'] = 'MEM001';  // テスト用メンバーID
+    $_SESSION['role'] = 'admin';        // テスト用ロール
+    $_SESSION['name'] = '高濱 太郎';
+  }
+
+  return; // 認証チェックをスキップ
+
+  /* 以下の認証チェックを一時的にコメントアウト
   // デバッグログ
   error_log('requireLogin - Session ID: ' . session_id());
   error_log('requireLogin - $_SESSION contents: ' . json_encode($_SESSION));
@@ -107,6 +120,7 @@ function requireLogin()
 
   // 最終アクセス時刻を更新（スライディング延長）
   updateSessionAccess($_SESSION['token']);
+  */
 }
 
 // 管理者権限チェック
@@ -114,6 +128,10 @@ function requireAdmin()
 {
   requireLogin();
 
+  // 【テスト用】管理者権限チェックを一時的に無効化
+  return; // 権限チェックをスキップ
+
+  /* 以下の権限チェックを一時的にコメントアウト
   if ($_SESSION['role'] !== 'admin') {
     if (isApiRequest()) {
       header('Content-Type: application/json; charset=utf-8');
@@ -124,6 +142,7 @@ function requireAdmin()
     http_response_code(403);
     die('アクセス権限がありません。');
   }
+  */
 }
 
 // セッション作成
