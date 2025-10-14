@@ -16,7 +16,7 @@ try {
     case 'GET':
       // 一覧取得
       $stmt = $pdo->prepare("
-                SELECT 
+                SELECT
                     event_id,
                     event_name,
                     repeat_type,
@@ -41,6 +41,45 @@ try {
 
       $stmt->execute(['tenant_id' => $tenant_id]);
       $events = $stmt->fetchAll();
+
+      // 各イベントに対象商品名またはアクション名を追加
+      foreach ($events as &$event) {
+        $event['target_names'] = [];
+        $event['product_multipliers'] = []; // 商品別倍率
+
+        if ($event['target_type'] === '特定商品' && !empty($event['target_ids'])) {
+          $productIds = explode(',', $event['target_ids']);
+          $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+
+          $stmt = $pdo->prepare("
+            SELECT product_name FROM products
+            WHERE tenant_id = ? AND product_id IN ($placeholders)
+          ");
+          $stmt->execute(array_merge([$tenant_id], $productIds));
+          $event['target_names'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+          // 商品別倍率を取得
+          $stmt = $pdo->prepare("
+            SELECT product_id, multiplier 
+            FROM event_product_multipliers
+            WHERE event_id = ? AND tenant_id = ?
+          ");
+          $stmt->execute([$event['event_id'], $tenant_id]);
+          $multipliers = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+          $event['product_multipliers'] = $multipliers;
+
+        } elseif ($event['target_type'] === '特定アクション' && !empty($event['target_ids'])) {
+          $actionIds = explode(',', $event['target_ids']);
+          $placeholders = implode(',', array_fill(0, count($actionIds), '?'));
+
+          $stmt = $pdo->prepare("
+            SELECT action_name FROM actions
+            WHERE tenant_id = ? AND action_id IN ($placeholders)
+          ");
+          $stmt->execute(array_merge([$tenant_id], $actionIds));
+          $event['target_names'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        }
+      }
 
       echo json_encode([
         'success' => true,
@@ -171,6 +210,25 @@ try {
         'notice_title' => $input['notice_title'] ?? null,
         'notice_body' => $input['notice_body'] ?? null
       ]);
+
+      // 商品別倍率を保存（特定商品の場合）
+      if ($input['target_type'] === '特定商品' && !empty($input['product_multipliers'])) {
+        foreach ($input['product_multipliers'] as $product_id => $multiplier) {
+          // 数値チェック
+          if (is_numeric($multiplier) && $multiplier > 0) {
+            $stmt = $pdo->prepare("
+              INSERT INTO event_product_multipliers (event_id, tenant_id, product_id, multiplier)
+              VALUES (:event_id, :tenant_id, :product_id, :multiplier)
+            ");
+            $stmt->execute([
+              'event_id' => $event_id,
+              'tenant_id' => $tenant_id,
+              'product_id' => $product_id,
+              'multiplier' => $multiplier
+            ]);
+          }
+        }
+      }
 
       // 告知を掲示板に投稿（publish_notice=trueの場合）
       if (!empty($input['publish_notice'])) {
@@ -309,6 +367,36 @@ try {
         'tenant_id' => $tenant_id,
         'event_id' => $event_id
       ]);
+
+      // 商品別倍率を更新（既存削除 + 新規挿入）
+      // まず既存の商品別倍率を削除
+      $stmt = $pdo->prepare("
+        DELETE FROM event_product_multipliers 
+        WHERE event_id = :event_id AND tenant_id = :tenant_id
+      ");
+      $stmt->execute([
+        'event_id' => $event_id,
+        'tenant_id' => $tenant_id
+      ]);
+
+      // 新しい商品別倍率を保存（特定商品の場合）
+      if ($input['target_type'] === '特定商品' && !empty($input['product_multipliers'])) {
+        foreach ($input['product_multipliers'] as $product_id => $multiplier) {
+          // 数値チェック
+          if (is_numeric($multiplier) && $multiplier > 0) {
+            $stmt = $pdo->prepare("
+              INSERT INTO event_product_multipliers (event_id, tenant_id, product_id, multiplier)
+              VALUES (:event_id, :tenant_id, :product_id, :multiplier)
+            ");
+            $stmt->execute([
+              'event_id' => $event_id,
+              'tenant_id' => $tenant_id,
+              'product_id' => $product_id,
+              'multiplier' => $multiplier
+            ]);
+          }
+        }
+      }
 
       // 監査ログ
       $stmt = $pdo->prepare("

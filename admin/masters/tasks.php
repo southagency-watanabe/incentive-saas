@@ -86,8 +86,11 @@ requireAdmin();
       <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>実績管理</span>
       </a>
-      <a href="/admin/bulletins.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>掲示板管理</span>
+      <a href="/admin/events.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>イベント</span>
+      </a>
+      <a href="/admin/notices.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>お知らせ</span>
       </a>
     </nav>
 
@@ -408,11 +411,11 @@ requireAdmin();
           setting = task.day_of_month + '日';
         }
 
-        // 期間の表示
+        // 期間の表示（日付のみ）
         let period = '-';
         if (task.start_datetime || task.end_datetime) {
-          const start = task.start_datetime ? task.start_datetime.replace('T', ' ') : '-';
-          const end = task.end_datetime ? task.end_datetime.replace('T', ' ') : '-';
+          const start = task.start_datetime ? task.start_datetime.substring(0, 10) : '-';
+          const end = task.end_datetime ? task.end_datetime.substring(0, 10) : '-';
           period = `${start}<br>〜<br>${end}`;
         }
 
@@ -462,6 +465,13 @@ requireAdmin();
         document.getElementById('approvalRequired').value = '必要';
         document.getElementById('daysOfWeekContainer').classList.add('hidden');
         document.getElementById('dayOfMonthContainer').classList.add('hidden');
+        // 新規作成時は現在日付の0時をデフォルト値に設定
+        const today = new Date();
+        const dateStr = today.getFullYear() + '-' +
+                        String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                        String(today.getDate()).padStart(2, '0') + 'T00:00';
+        document.getElementById('startDatetime').value = dateStr;
+        document.getElementById('endDatetime').value = dateStr;
       } else {
         title.textContent = 'タスク編集';
         document.getElementById('taskId').value = data.task_id;

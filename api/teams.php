@@ -16,16 +16,19 @@ try {
     case 'GET':
       // 一覧取得
       $stmt = $pdo->prepare("
-                SELECT 
-                    team_id,
-                    team_name,
-                    status,
-                    description,
-                    created_at,
-                    updated_at
-                FROM teams
-                WHERE tenant_id = :tenant_id
-                ORDER BY team_id ASC
+                SELECT
+                    t.team_id,
+                    t.team_name,
+                    t.leader_id,
+                    m.name AS leader_name,
+                    t.status,
+                    t.description,
+                    t.created_at,
+                    t.updated_at
+                FROM teams t
+                LEFT JOIN members m ON t.leader_id = m.member_id AND t.tenant_id = m.tenant_id
+                WHERE t.tenant_id = :tenant_id
+                ORDER BY t.team_id ASC
             ");
 
       $stmt->execute(['tenant_id' => $tenant_id]);
@@ -65,12 +68,15 @@ try {
       }
       $team_id = 'T' . str_pad($newNum, 3, '0', STR_PAD_LEFT);
 
+      // リーダーが指定されている場合、そのメンバーをこのチームに所属させる
+      $leader_id = !empty($input['leader_id']) ? $input['leader_id'] : null;
+
       // 登録
       $stmt = $pdo->prepare("
                 INSERT INTO teams (
-                    team_id, tenant_id, team_name, status, description
+                    team_id, tenant_id, team_name, leader_id, status, description
                 ) VALUES (
-                    :team_id, :tenant_id, :team_name, :status, :description
+                    :team_id, :tenant_id, :team_name, :leader_id, :status, :description
                 )
             ");
 
@@ -78,9 +84,23 @@ try {
         'team_id' => $team_id,
         'tenant_id' => $tenant_id,
         'team_name' => $input['team_name'],
+        'leader_id' => $leader_id,
         'status' => $input['status'],
         'description' => $input['description'] ?? null
       ]);
+
+      // リーダーをこのチームに所属させる
+      if ($leader_id) {
+        $stmt = $pdo->prepare("
+                  UPDATE members SET team_id = :team_id
+                  WHERE tenant_id = :tenant_id AND member_id = :member_id
+              ");
+        $stmt->execute([
+          'team_id' => $team_id,
+          'tenant_id' => $tenant_id,
+          'member_id' => $leader_id
+        ]);
+      }
 
       // 監査ログ
       $stmt = $pdo->prepare("
@@ -121,10 +141,14 @@ try {
         exit;
       }
 
+      // リーダーが指定されている場合、そのメンバーをこのチームに所属させる
+      $leader_id = !empty($input['leader_id']) ? $input['leader_id'] : null;
+
       // 更新
       $stmt = $pdo->prepare("
                 UPDATE teams SET
                     team_name = :team_name,
+                    leader_id = :leader_id,
                     status = :status,
                     description = :description
                 WHERE tenant_id = :tenant_id AND team_id = :team_id
@@ -132,11 +156,25 @@ try {
 
       $stmt->execute([
         'team_name' => $input['team_name'],
+        'leader_id' => $leader_id,
         'status' => $input['status'],
         'description' => $input['description'] ?? null,
         'tenant_id' => $tenant_id,
         'team_id' => $team_id
       ]);
+
+      // リーダーをこのチームに所属させる
+      if ($leader_id) {
+        $stmt = $pdo->prepare("
+                  UPDATE members SET team_id = :team_id
+                  WHERE tenant_id = :tenant_id AND member_id = :member_id
+              ");
+        $stmt->execute([
+          'team_id' => $team_id,
+          'tenant_id' => $tenant_id,
+          'member_id' => $leader_id
+        ]);
+      }
 
       // 監査ログ
       $stmt = $pdo->prepare("

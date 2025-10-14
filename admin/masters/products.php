@@ -86,8 +86,11 @@ requireAdmin();
       <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>実績管理</span>
       </a>
-      <a href="/admin/bulletins.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>掲示板管理</span>
+      <a href="/admin/events.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>イベント</span>
+      </a>
+      <a href="/admin/notices.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>お知らせ</span>
       </a>
     </nav>
 
@@ -132,10 +135,13 @@ requireAdmin();
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">商品ID</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">商品名</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">カテゴリ</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">大カテゴリ</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">中カテゴリ</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">小カテゴリ</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">付与pt</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">売価</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">原価</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">粗利</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ステータス</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">承認要否</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>

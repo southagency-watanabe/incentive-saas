@@ -86,8 +86,11 @@ requireAdmin();
       <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>実績管理</span>
       </a>
-      <a href="/admin/bulletins.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>掲示板管理</span>
+      <a href="/admin/events.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>イベント</span>
+      </a>
+      <a href="/admin/notices.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>お知らせ</span>
       </a>
     </nav>
 
@@ -132,6 +135,7 @@ requireAdmin();
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">チームID</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">チーム名</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">リーダー</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ステータス</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">説明</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
@@ -159,6 +163,15 @@ requireAdmin();
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">チーム名 <span class="text-red-500">*</span></label>
           <input type="text" id="teamName" name="team_name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- チームリーダー -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">チームリーダー</label>
+          <select id="leaderId" name="leader_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            <option value="">-- リーダーなし --</option>
+            <!-- メンバーリストはJavaScriptで挿入 -->
+          </select>
         </div>
 
         <!-- ステータス -->
@@ -191,6 +204,7 @@ requireAdmin();
 
   <script>
     let currentMode = 'create';
+    let allMembers = [];
 
     // マスター管理メニューの開閉
     function toggleMasterMenu() {
@@ -222,8 +236,23 @@ requireAdmin();
 
     // 初期読み込み
     document.addEventListener('DOMContentLoaded', () => {
+      loadMembers();
       loadTeams();
     });
+
+    // メンバー一覧取得
+    async function loadMembers() {
+      try {
+        const response = await fetch('/api/members.php');
+        const result = await response.json();
+
+        if (result.success) {
+          allMembers = result.data.filter(m => m.status === '有効');
+        }
+      } catch (error) {
+        console.error('メンバー取得エラー:', error);
+      }
+    }
 
     // チーム一覧取得
     async function loadTeams(showLoading = false) {
@@ -264,7 +293,7 @@ requireAdmin();
       tbody.innerHTML = '';
 
       if (teams.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
         return;
       }
 
@@ -273,6 +302,7 @@ requireAdmin();
         tr.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(team.team_id)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(team.team_name)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${escapeHtml(team.leader_name || '-')}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${team.status === '有効' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                             ${escapeHtml(team.status)}
@@ -298,12 +328,23 @@ requireAdmin();
 
       form.reset();
 
+      // リーダー選択肢を生成
+      const leaderSelect = document.getElementById('leaderId');
+      leaderSelect.innerHTML = '<option value="">-- リーダーなし --</option>';
+      allMembers.forEach(member => {
+        const option = document.createElement('option');
+        option.value = member.member_id;
+        option.textContent = member.name;
+        leaderSelect.appendChild(option);
+      });
+
       if (mode === 'create') {
         title.textContent = 'チーム登録';
       } else {
         title.textContent = 'チーム編集';
         document.getElementById('teamId').value = data.team_id;
         document.getElementById('teamName').value = data.team_name;
+        document.getElementById('leaderId').value = data.leader_id || '';
         document.getElementById('status').value = data.status;
         document.getElementById('description').value = data.description || '';
       }
@@ -323,6 +364,7 @@ requireAdmin();
       const formData = new FormData(e.target);
       const data = {
         team_name: formData.get('team_name'),
+        leader_id: formData.get('leader_id'),
         status: formData.get('status'),
         description: formData.get('description')
       };

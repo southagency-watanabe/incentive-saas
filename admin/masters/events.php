@@ -98,8 +98,11 @@ $actions = $stmt->fetchAll();
       <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>実績管理</span>
       </a>
-      <a href="/admin/bulletins.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>掲示板管理</span>
+      <a href="/admin/events.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>イベント</span>
+      </a>
+      <a href="/admin/notices.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>お知らせ</span>
       </a>
     </nav>
 
@@ -275,16 +278,19 @@ $actions = $stmt->fetchAll();
         <!-- 対象選択（特定商品の場合） -->
         <div id="targetProductsContainer" class="hidden">
           <label class="block text-sm font-medium text-gray-700 mb-2">対象商品 <span class="text-red-500">*</span></label>
-          <div class="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto">
-            <div class="grid grid-cols-2 gap-2">
+          <div class="border border-gray-300 rounded-md p-3 max-h-60 overflow-y-auto">
+            <div class="space-y-2">
               <?php foreach ($products as $product): ?>
-                <label class="flex items-center space-x-2">
-                  <input type="checkbox" name="target_products[]" value="<?= htmlspecialchars($product['product_id']) ?>" class="rounded">
-                  <span class="text-sm"><?= htmlspecialchars($product['product_name']) ?></span>
-                </label>
+                <div class="flex items-center space-x-2">
+                  <input type="checkbox" name="target_products[]" value="<?= htmlspecialchars($product['product_id']) ?>" class="rounded product-checkbox" onchange="toggleMultiplierInput(this)">
+                  <span class="text-sm flex-1"><?= htmlspecialchars($product['product_name']) ?></span>
+                  <input type="number" step="0.01" min="0.01" placeholder="倍率" class="w-20 px-2 py-1 text-sm border border-gray-300 rounded product-multiplier" data-product-id="<?= htmlspecialchars($product['product_id']) ?>" disabled>
+                  <span class="text-xs text-gray-500">倍</span>
+                </div>
               <?php endforeach; ?>
             </div>
           </div>
+          <p class="text-xs text-gray-500 mt-2">※ チェックした商品の倍率を個別に設定できます。未入力の場合は上部のイベント倍率が適用されます。</p>
         </div>
 
         <!-- 対象選択（特定アクションの場合） -->
@@ -382,6 +388,7 @@ $actions = $stmt->fetchAll();
       setupRepeatTypeToggle();
       setupTargetTypeToggle();
       setupPublishNoticeToggle();
+      setupMultiplierSync();
     });
 
     // 繰り返し設定の切り替え
@@ -436,6 +443,41 @@ $actions = $stmt->fetchAll();
       });
     }
 
+    // 商品別倍率入力欄の有効/無効切り替え
+    function toggleMultiplierInput(checkbox) {
+      const productId = checkbox.value;
+      const multiplierInput = document.querySelector(`.product-multiplier[data-product-id="${productId}"]`);
+      
+      if (checkbox.checked) {
+        multiplierInput.disabled = false;
+        // デフォルト倍率を設定（イベント倍率の値）
+        if (!multiplierInput.value) {
+          const eventMultiplier = document.getElementById('multiplier').value;
+          multiplierInput.value = eventMultiplier || '1.00';
+        }
+      } else {
+        multiplierInput.disabled = true;
+        multiplierInput.value = '';
+      }
+    }
+
+    // イベント倍率変更時に商品別倍率を更新
+    function setupMultiplierSync() {
+      const eventMultiplierInput = document.getElementById('multiplier');
+      
+      eventMultiplierInput.addEventListener('change', (e) => {
+        const newMultiplier = e.target.value;
+        // チェック済みで未入力の商品倍率を更新
+        document.querySelectorAll('.product-checkbox:checked').forEach(checkbox => {
+          const productId = checkbox.value;
+          const multiplierInput = document.querySelector(`.product-multiplier[data-product-id="${productId}"]`);
+          if (!multiplierInput.disabled && !multiplierInput.value) {
+            multiplierInput.value = newMultiplier;
+          }
+        });
+      });
+    }
+
     // イベント一覧取得
     async function loadEvents(showLoading = false) {
       try {
@@ -487,6 +529,12 @@ $actions = $stmt->fetchAll();
         };
         const period = `${formatDate(event.start_date)} 〜 ${formatDate(event.end_date)}`;
 
+        // 倍率表示（商品別倍率がある場合は追記）
+        let multiplierDisplay = `${parseFloat(event.multiplier).toFixed(1)}倍`;
+        if (event.product_multipliers && Object.keys(event.product_multipliers).length > 0) {
+          multiplierDisplay += '<br><span class="text-xs text-blue-600">商品別設定あり</span>';
+        }
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(event.event_id)}</td>
@@ -494,7 +542,7 @@ $actions = $stmt->fetchAll();
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${period}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(event.repeat_type)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(event.target_type)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${parseFloat(event.multiplier).toFixed(1)}倍</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${multiplierDisplay}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${event.status === '有効' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                             ${escapeHtml(event.status)}
@@ -531,14 +579,22 @@ $actions = $stmt->fetchAll();
 
       if (mode === 'create') {
         title.textContent = 'イベント登録';
+        // 新規作成時は現在日付の0時をデフォルト値に設定
+        const today = new Date();
+        const dateStr = today.getFullYear() + '-' +
+                        String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                        String(today.getDate()).padStart(2, '0') + 'T00:00';
+        document.getElementById('startDate').value = dateStr;
+        document.getElementById('endDate').value = dateStr;
+        document.getElementById('noticePublishAt').value = dateStr;
       } else {
         title.textContent = 'イベント編集';
         document.getElementById('eventId').value = data.event_id;
         document.getElementById('eventName').value = data.event_name;
         document.getElementById('repeatType').value = data.repeat_type;
-        // datetime形式をdatetime-local形式に変換（YYYY-MM-DDTHH:MM）
-        document.getElementById('startDate').value = data.start_date ? data.start_date.substring(0, 16) : '';
-        document.getElementById('endDate').value = data.end_date ? data.end_date.substring(0, 16) : '';
+        // datetime形式をdatetime-local形式に変換（YYYY-MM-DD HH:MM:SS → YYYY-MM-DDTHH:MM）
+        document.getElementById('startDate').value = data.start_date ? data.start_date.substring(0, 16).replace(' ', 'T') : '';
+        document.getElementById('endDate').value = data.end_date ? data.end_date.substring(0, 16).replace(' ', 'T') : '';
         document.getElementById('targetType').value = data.target_type;
         document.getElementById('multiplier').value = data.multiplier;
         document.getElementById('status').value = data.status;
@@ -566,7 +622,17 @@ $actions = $stmt->fetchAll();
             const ids = data.target_ids.split(',');
             ids.forEach(id => {
               const checkbox = document.querySelector(`input[name="target_products[]"][value="${id}"]`);
-              if (checkbox) checkbox.checked = true;
+              if (checkbox) {
+                checkbox.checked = true;
+                // 商品別倍率を設定
+                const multiplierInput = document.querySelector(`.product-multiplier[data-product-id="${id}"]`);
+                if (multiplierInput) {
+                  multiplierInput.disabled = false;
+                  // product_multipliersから倍率を取得、なければデフォルト倍率
+                  const customMultiplier = data.product_multipliers && data.product_multipliers[id];
+                  multiplierInput.value = customMultiplier || data.multiplier || '1.00';
+                }
+              }
             });
           }
         } else if (data.target_type === '特定アクション') {
@@ -674,6 +740,7 @@ $actions = $stmt->fetchAll();
       }
 
       // 対象設定
+      let productMultipliers = {};
       if (targetType === '特定商品') {
         const selectedProducts = formData.getAll('target_products[]');
         if (selectedProducts.length === 0) {
@@ -681,6 +748,14 @@ $actions = $stmt->fetchAll();
           return;
         }
         targetIds = selectedProducts.join(',');
+
+        // 商品別倍率を収集
+        selectedProducts.forEach(productId => {
+          const multiplierInput = document.querySelector(`.product-multiplier[data-product-id="${productId}"]`);
+          if (multiplierInput && multiplierInput.value) {
+            productMultipliers[productId] = parseFloat(multiplierInput.value);
+          }
+        });
       } else if (targetType === '特定アクション') {
         const selectedActions = formData.getAll('target_actions[]');
         if (selectedActions.length === 0) {
@@ -715,6 +790,7 @@ $actions = $stmt->fetchAll();
         target_type: targetType,
         target_ids: targetIds,
         multiplier: formData.get('multiplier'),
+        product_multipliers: productMultipliers,
         status: formData.get('status'),
         description: formData.get('description'),
         publish_notice: formData.get('publish_notice') ? true : false,

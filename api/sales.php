@@ -14,6 +14,29 @@ $pdo = getDB();
 $method = $_SERVER['REQUEST_METHOD'];
 $tenant_id = $_SESSION['tenant_id'];
 
+/**
+ * イベントから商品の倍率を取得（商品別倍率が設定されていればそれを使用、なければデフォルト倍率）
+ */
+function getEventMultiplierForProduct($pdo, $event, $product_id, $tenant_id) {
+  // 商品別倍率が設定されているかチェック
+  $stmt = $pdo->prepare("
+    SELECT multiplier 
+    FROM event_product_multipliers 
+    WHERE event_id = :event_id 
+    AND tenant_id = :tenant_id 
+    AND product_id = :product_id
+  ");
+  $stmt->execute([
+    'event_id' => $event['event_id'],
+    'tenant_id' => $tenant_id,
+    'product_id' => $product_id
+  ]);
+  $product_multiplier = $stmt->fetch();
+  
+  // 商品別倍率が設定されていればそれを使用、なければデフォルト倍率
+  return $product_multiplier ? (float)$product_multiplier['multiplier'] : (float)$event['multiplier'];
+}
+
 try {
   switch ($method) {
     case 'GET':
@@ -161,10 +184,15 @@ try {
           // '全アクション'、'特定アクション'は商品には適用しない
 
           // 該当するイベントの中で最大倍率を適用
-          if ($is_applicable && $event['multiplier'] > $event_multiplier) {
-            $event_multiplier = $event['multiplier'];
-            $applied_event_id = $event['event_id'];
-            $applied_event_name = $event['event_name'];
+          if ($is_applicable) {
+            // 商品別倍率を取得（設定されていればそれを使用、なければデフォルト倍率）
+            $current_multiplier = getEventMultiplierForProduct($pdo, $event, $product_id, $tenant_id);
+            
+            if ($current_multiplier > $event_multiplier) {
+              $event_multiplier = $current_multiplier;
+              $applied_event_id = $event['event_id'];
+              $applied_event_name = $event['event_name'];
+            }
           }
         }
 
@@ -437,10 +465,15 @@ try {
         // '全アクション'、'特定アクション'は商品には適用しない
 
         // 該当するイベントの中で最大倍率を適用
-        if ($is_applicable && $event['multiplier'] > $event_multiplier) {
-          $event_multiplier = $event['multiplier'];
-          $applied_event_id = $event['event_id'];
-          $applied_event_name = $event['event_name'];
+        if ($is_applicable) {
+          // 商品別倍率を取得（設定されていればそれを使用、なければデフォルト倍率）
+          $current_multiplier = getEventMultiplierForProduct($pdo, $event, $input['product_id'], $tenant_id);
+          
+          if ($current_multiplier > $event_multiplier) {
+            $event_multiplier = $current_multiplier;
+            $applied_event_id = $event['event_id'];
+            $applied_event_name = $event['event_name'];
+          }
         }
       }
 
@@ -464,7 +497,7 @@ try {
                     :tenant_id, :date, :member_id, :product_id, :quantity,
                     :unit_price, :base_point, :event_multiplier, :final_point,
                     :applied_event_id, :applied_event_name,
-                    :note, 'ユーザー確認待ち'
+                    :note, '承認待ち'
                 )
             ");
 

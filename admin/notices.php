@@ -10,7 +10,7 @@ requireAdmin();
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>掲示板管理 - インセンティブSaaS</title>
+  <title>お知らせ - インセンティブSaaS</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -84,8 +84,11 @@ requireAdmin();
       <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>実績管理</span>
       </a>
-      <a href="/admin/bulletins.php" class="flex items-center px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
-        <span class="font-medium">掲示板管理</span>
+      <a href="/admin/events.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>イベント</span>
+      </a>
+      <a href="/admin/notices.php" class="flex items-center px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
+        <span>お知らせ</span>
       </a>
     </nav>
 
@@ -103,38 +106,30 @@ requireAdmin();
     <!-- ページヘッダー -->
     <header class="bg-white shadow-sm border-b">
       <div class="px-8 py-6">
-        <h2 class="text-2xl font-bold text-gray-800">掲示板管理</h2>
+        <h2 class="text-2xl font-bold text-gray-800">お知らせ</h2>
       </div>
     </header>
 
     <!-- メインコンテンツ -->
     <main class="px-8 py-8">
-    <!-- イベント掲示セクション -->
-    <div class="mb-8">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold text-gray-800">📌 イベント掲示</h2>
-        <button id="refreshBtn" onclick="refreshList()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center gap-2">
-          <span id="refreshIcon">🔄</span>
-          <span>更新</span>
-        </button>
+      <!-- お知らせセクション -->
+      <div>
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-800">お知らせ一覧</h2>
+          <div class="flex gap-3">
+            <button id="refreshNoticesBtn" onclick="refreshNotices()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center gap-2">
+              <span id="refreshNoticesIcon">🔄</span>
+              <span>更新</span>
+            </button>
+            <button onclick="openModal('create')" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              新規投稿
+            </button>
+          </div>
+        </div>
+        <div id="noticesList" class="space-y-4">
+          <!-- お知らせはJavaScriptで挿入 -->
+        </div>
       </div>
-      <div id="pinnedList" class="space-y-4">
-        <!-- ピン留めされたイベント掲示はJavaScriptで挿入 -->
-      </div>
-    </div>
-
-    <!-- 掲示板セクション -->
-    <div>
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold text-gray-800">💬 掲示板</h2>
-        <button onclick="openModal('create')" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-          新規投稿
-        </button>
-      </div>
-      <div id="bulletinList" class="space-y-4">
-        <!-- 一般掲示板はJavaScriptで挿入 -->
-      </div>
-    </div>
     </main>
   </div>
 
@@ -253,15 +248,15 @@ requireAdmin();
 
     // 初期読み込み
     document.addEventListener('DOMContentLoaded', () => {
-      loadBulletins();
+      loadNotices();
     });
 
-    // 掲示板一覧取得
-    async function loadBulletins(showLoading = false) {
+    // お知らせ一覧取得
+    async function loadNotices(showLoading = false) {
       try {
         if (showLoading) {
-          const refreshIcon = document.getElementById('refreshIcon');
-          const refreshBtn = document.getElementById('refreshBtn');
+          const refreshIcon = document.getElementById('refreshNoticesIcon');
+          const refreshBtn = document.getElementById('refreshNoticesBtn');
           refreshIcon.textContent = '⏳';
           refreshBtn.disabled = true;
           refreshBtn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -271,17 +266,19 @@ requireAdmin();
         const result = await response.json();
 
         if (result.success) {
-          renderBulletinList(result.data);
+          // related_event_idがないものだけ表示
+          const notices = result.data.filter(b => !b.related_event_id);
+          renderNoticesList(notices);
         } else {
-          alert('データの取得に失敗しました。');
+          alert('お知らせデータの取得に失敗しました。');
         }
       } catch (error) {
         console.error(error);
         alert('エラーが発生しました。');
       } finally {
         if (showLoading) {
-          const refreshIcon = document.getElementById('refreshIcon');
-          const refreshBtn = document.getElementById('refreshBtn');
+          const refreshIcon = document.getElementById('refreshNoticesIcon');
+          const refreshBtn = document.getElementById('refreshNoticesBtn');
           refreshIcon.textContent = '🔄';
           refreshBtn.disabled = false;
           refreshBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -289,53 +286,24 @@ requireAdmin();
       }
     }
 
-    // 掲示板リスト描画
-    function renderBulletinList(bulletins) {
-      // イベント投稿（related_event_idがあるもの）とそれ以外で分ける
-      const eventBulletins = bulletins.filter(b => b.related_event_id);
-      const normalBulletins = bulletins.filter(b => !b.related_event_id);
-
-      // イベント掲示を描画
-      renderPinnedList(eventBulletins);
-
-      // 一般掲示板を描画
-      renderNormalList(normalBulletins);
-    }
-
-    // イベント掲示を描画
-    function renderPinnedList(bulletins) {
-      const container = document.getElementById('pinnedList');
+    // お知らせリスト描画
+    function renderNoticesList(notices) {
+      const container = document.getElementById('noticesList');
       container.innerHTML = '';
 
-      if (bulletins.length === 0) {
-        container.innerHTML = '<div class="bg-white rounded-lg shadow p-6 text-center text-gray-500">イベント掲示はありません</div>';
+      if (notices.length === 0) {
+        container.innerHTML = '<div class="bg-white rounded-lg shadow p-6 text-center text-gray-500">お知らせはありません</div>';
         return;
       }
 
-      bulletins.forEach(bulletin => {
-        const div = createBulletinCard(bulletin, true);
-        container.appendChild(div);
+      notices.forEach(notice => {
+        const card = createNoticeCard(notice);
+        container.appendChild(card);
       });
     }
 
-    // 一般掲示板を描画
-    function renderNormalList(bulletins) {
-      const container = document.getElementById('bulletinList');
-      container.innerHTML = '';
-
-      if (bulletins.length === 0) {
-        container.innerHTML = '<div class="bg-white rounded-lg shadow p-6 text-center text-gray-500">掲示板投稿はありません</div>';
-        return;
-      }
-
-      bulletins.forEach(bulletin => {
-        const div = createBulletinCard(bulletin, false);
-        container.appendChild(div);
-      });
-    }
-
-    // 掲示板カード作成
-    function createBulletinCard(bulletin, isEvent = false) {
+    // お知らせカード作成
+    function createNoticeCard(bulletin) {
       const div = document.createElement('div');
       div.className = 'bg-white rounded-lg shadow p-6';
 
@@ -355,13 +323,11 @@ requireAdmin();
       div.innerHTML = `
         <div class="flex justify-between items-start mb-3">
           <div class="flex items-center gap-2">
-            ${isEvent ? '<span class="text-green-500 text-xl">🎉</span>' : ''}
-            ${bulletin.pinned == 1 && !isEvent ? '<span class="text-yellow-500 text-xl">📌</span>' : ''}
+            ${bulletin.pinned == 1 ? '<span class="text-yellow-500 text-xl">📌</span>' : ''}
             <h3 class="text-lg font-bold text-gray-900">${escapeHtml(bulletin.title)}</h3>
-            ${isEvent ? '<span class="ml-2 px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">イベント</span>' : ''}
           </div>
           <div class="flex gap-2">
-            ${!isEvent ? `<span class="px-2 py-1 text-xs font-semibold rounded ${typeColor}">${escapeHtml(bulletin.type)}</span>` : ''}
+            <span class="px-2 py-1 text-xs font-semibold rounded ${typeColor}">${escapeHtml(bulletin.type)}</span>
             <span class="px-2 py-1 text-xs font-semibold rounded ${statusColor}">${escapeHtml(bulletin.status)}</span>
           </div>
         </div>
@@ -370,7 +336,6 @@ requireAdmin();
           <div>
             <span>投稿: ${escapeHtml(bulletin.author)} | ${formatDatetime(bulletin.created_at)}</span>
             ${bulletin.start_datetime ? `<br><span>公開期間: ${formatDatetime(bulletin.start_datetime)} 〜 ${bulletin.end_datetime ? formatDatetime(bulletin.end_datetime) : '無期限'}</span>` : ''}
-            ${isEvent && bulletin.related_event_id ? `<br><span class="text-green-600">イベントID: ${escapeHtml(bulletin.related_event_id)}</span>` : ''}
           </div>
           <div class="flex gap-2">
             <button onclick='openModal("edit", ${JSON.stringify(bulletin).replace(/'/g, "&apos;")})' class="text-blue-600 hover:text-blue-900">編集</button>
@@ -455,7 +420,7 @@ requireAdmin();
         if (result.success) {
           alert(result.message);
           closeModal();
-          loadBulletins();
+          loadNotices();
         } else {
           alert(result.message);
         }
@@ -480,7 +445,7 @@ requireAdmin();
 
         if (result.success) {
           alert(result.message);
-          loadBulletins();
+          loadNotices();
         } else {
           alert(result.message);
         }
@@ -491,8 +456,8 @@ requireAdmin();
     }
 
     // 更新
-    function refreshList() {
-      loadBulletins(true);
+    function refreshNotices() {
+      loadNotices(true);
     }
 
     // 日時フォーマット

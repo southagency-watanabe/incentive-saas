@@ -106,8 +106,11 @@ $productsJson = json_encode($products);
       <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>実績管理</span>
       </a>
-      <a href="/admin/bulletins.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>掲示板管理</span>
+      <a href="/admin/events.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>イベント</span>
+      </a>
+      <a href="/admin/notices.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>お知らせ</span>
       </a>
     </nav>
 
@@ -140,7 +143,7 @@ $productsJson = json_encode($products);
           <!-- 売上計上日時 -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">売上計上日時 <span class="text-red-500">*</span></label>
-            <input type="datetime-local" id="date" name="date" required max="<?= date('Y-m-d\TH:i') ?>" value="<?= date('Y-m-d\TH:i') ?>" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            <input type="datetime-local" id="date" name="date" required max="<?= date('Y-m-d\TH:i') ?>" value="<?= date('Y-m-d\T00:00') ?>" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
           </div>
 
           <!-- メンバー -->
@@ -313,10 +316,6 @@ $productsJson = json_encode($products);
               <label class="block text-sm font-medium text-gray-700 mb-2">承認状態</label>
               <div class="border border-gray-300 rounded-md p-3 bg-white">
                 <label class="flex items-center space-x-2 mb-1">
-                  <input type="checkbox" name="filter_approval_status[]" value="ユーザー確認待ち" class="rounded">
-                  <span class="text-sm">ユーザー確認待ち</span>
-                </label>
-                <label class="flex items-center space-x-2 mb-1">
                   <input type="checkbox" name="filter_approval_status[]" value="承認待ち" class="rounded">
                   <span class="text-sm">承認待ち</span>
                 </label>
@@ -403,6 +402,9 @@ $productsJson = json_encode($products);
               承認状態 <span id="sort-approval_status"></span>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">備考</th>
+            <th onclick="sortTable('created_at')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100">
+              登録日時 <span id="sort-created_at"></span>
+            </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
           </tr>
         </thead>
@@ -772,7 +774,7 @@ $productsJson = json_encode($products);
       tbody.innerHTML = '';
 
       if (sales.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="12" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
         return;
       }
 
@@ -782,6 +784,8 @@ $productsJson = json_encode($products);
         const eventClass = sale.applied_event_name ? 'text-blue-600 font-medium' : 'text-gray-500';
         // 日付のみ表示（YYYY-MM-DD）
         const dateOnly = sale.date ? sale.date.substring(0, 10) : '';
+        // 登録日時のフォーマット（YYYY-MM-DD HH:MM:SS）
+        const createdAt = sale.created_at ? sale.created_at.substring(0, 19).replace('T', ' ') : '-';
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -800,6 +804,7 @@ $productsJson = json_encode($products);
                         </span>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">${escapeHtml(sale.note || '-')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${createdAt}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button onclick='deleteSale(${sale.id}, "${escapeHtml(sale.product_name)}")' class="text-red-600 hover:text-red-900">削除</button>
                     </td>
@@ -811,8 +816,6 @@ $productsJson = json_encode($products);
     // 承認状態の色
     function getStatusColor(status) {
       switch (status) {
-        case 'ユーザー確認待ち':
-          return 'bg-orange-100 text-orange-800';
         case '承認待ち':
           return 'bg-yellow-100 text-yellow-800';
         case '承認済み':
@@ -857,9 +860,10 @@ $productsJson = json_encode($products);
         if (result.success) {
           alert(result.message);
           e.target.reset();
-          document.getElementById('date').value = '<?= date('Y-m-d\TH:i') ?>';
+          document.getElementById('date').value = '<?= date('Y-m-d\T00:00') ?>';
           document.getElementById('totalAmount').textContent = '0';
           document.getElementById('priceWarning').classList.add('hidden');
+          document.getElementById('eventPreview').classList.add('hidden');
           loadSales();
         } else {
           alert(result.message);
@@ -925,6 +929,10 @@ $productsJson = json_encode($products);
           case 'approval_status':
             valA = a.approval_status;
             valB = b.approval_status;
+            break;
+          case 'created_at':
+            valA = a.created_at;
+            valB = b.created_at;
             break;
           default:
             return 0;

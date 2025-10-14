@@ -101,8 +101,11 @@ $products = $stmt->fetchAll();
       <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
         <span class="font-medium">実績管理</span>
       </a>
-      <a href="/admin/bulletins.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>掲示板管理</span>
+      <a href="/admin/events.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>イベント</span>
+      </a>
+      <a href="/admin/notices.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+        <span>お知らせ</span>
       </a>
     </nav>
 
@@ -384,27 +387,6 @@ $products = $stmt->fetchAll();
       </table>
     </div>
 
-    <!-- ランキングセクション -->
-    <div class="mt-8">
-      <h2 class="text-2xl font-bold text-gray-800 mb-6">🏆 ランキング</h2>
-      <div class="grid grid-cols-2 gap-6">
-        <!-- 売上金額ランキング -->
-        <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-lg font-bold text-gray-800 mb-4">売上金額TOP10</h3>
-          <div id="salesRanking" class="space-y-2">
-            <!-- データはJavaScriptで挿入 -->
-          </div>
-        </div>
-
-        <!-- ポイント獲得ランキング -->
-        <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-lg font-bold text-gray-800 mb-4">⭐ ポイント獲得TOP10</h3>
-          <div id="pointsRanking" class="space-y-2">
-            <!-- データはJavaScriptで挿入 -->
-          </div>
-        </div>
-      </div>
-    </div>
     </main>
   </div>
 
@@ -668,51 +650,6 @@ $products = $stmt->fetchAll();
       }
     }
 
-    // ランキング描画
-    function renderRankings(rankings) {
-      // 売上金額ランキング
-      const salesRanking = document.getElementById('salesRanking');
-      salesRanking.innerHTML = '';
-
-      if (rankings.sales.length === 0) {
-        salesRanking.innerHTML = '<p class="text-gray-500 text-center py-4">データがありません</p>';
-      } else {
-        rankings.sales.forEach((member, index) => {
-          const div = document.createElement('div');
-          div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded';
-          div.innerHTML = `
-            <div class="flex items-center gap-3">
-              <span class="text-lg font-bold ${index < 3 ? 'text-yellow-500' : 'text-gray-500'}">${index + 1}</span>
-              <span class="font-medium">${escapeHtml(member.member_name)}</span>
-            </div>
-            <span class="font-bold text-gray-900">¥${parseFloat(member.total_sales).toLocaleString()}</span>
-          `;
-          salesRanking.appendChild(div);
-        });
-      }
-
-      // ポイント獲得ランキング
-      const pointsRanking = document.getElementById('pointsRanking');
-      pointsRanking.innerHTML = '';
-
-      if (rankings.points.length === 0) {
-        pointsRanking.innerHTML = '<p class="text-gray-500 text-center py-4">データがありません</p>';
-      } else {
-        rankings.points.forEach((member, index) => {
-          const div = document.createElement('div');
-          div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded';
-          div.innerHTML = `
-            <div class="flex items-center gap-3">
-              <span class="text-lg font-bold ${index < 3 ? 'text-yellow-500' : 'text-gray-500'}">${index + 1}</span>
-              <span class="font-medium">${escapeHtml(member.member_name)}</span>
-            </div>
-            <span class="font-bold text-blue-600">${member.final_points}pt</span>
-          `;
-          pointsRanking.appendChild(div);
-        });
-      }
-    }
-
     // HTMLエスケープ
     function escapeHtml(text) {
       if (text === null || text === undefined) return '';
@@ -948,7 +885,6 @@ $products = $stmt->fetchAll();
           renderProductsTable(result.products);
           cachedGraphData = result.graphs;
           updateChartByTab(currentGraphTab);
-          renderRankings(result.rankings);
         } else {
           console.error('実績管理データの取得に失敗しました。');
         }
