@@ -69,13 +69,13 @@ requireAdmin();
           </svg>
         </button>
         <div id="approvalSubmenu" class="bg-gray-50">
-          <a href="/admin/approvals.php?tab=sales" class="flex items-center px-6 py-2 pl-12 text-sm text-blue-600 font-medium bg-blue-50 hover:bg-blue-100">
+          <a href="/admin/approvals.php?tab=sales" id="salesTabLink" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
             <span>売上承認</span>
           </a>
-          <a href="/admin/approvals.php?tab=actions" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+          <a href="/admin/approvals.php?tab=actions" id="actionsTabLink" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
             <span>アクション承認</span>
           </a>
-          <a href="/admin/approvals.php?tab=tasks" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+          <a href="/admin/approvals.php?tab=tasks" id="tasksTabLink" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
             <span>タスク承認</span>
           </a>
         </div>
@@ -159,15 +159,59 @@ requireAdmin();
 
     <!-- アクション承認タブ -->
     <div id="actionsTab" class="hidden">
-      <div class="bg-white rounded-lg shadow p-6">
-        <p class="text-gray-500">アクション承認機能は実装予定です。</p>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-800">アクション承認待ち一覧</h2>
+        <button onclick="loadActions()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center gap-2">
+          <span>🔄</span>
+          <span>更新</span>
+        </button>
+      </div>
+
+      <div class="bg-white rounded-lg shadow overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">日付</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">メンバー</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">アクション</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ポイント</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">承認状態</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+            </tr>
+          </thead>
+          <tbody id="actionsTableBody" class="bg-white divide-y divide-gray-200">
+            <!-- データはJavaScriptで挿入 -->
+          </tbody>
+        </table>
       </div>
     </div>
 
     <!-- タスク承認タブ -->
     <div id="tasksTab" class="hidden">
-      <div class="bg-white rounded-lg shadow p-6">
-        <p class="text-gray-500">タスク承認機能は実装予定です。</p>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-800">タスク承認待ち一覧</h2>
+        <button onclick="loadTasks()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center gap-2">
+          <span>🔄</span>
+          <span>更新</span>
+        </button>
+      </div>
+
+      <div class="bg-white rounded-lg shadow overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">日付</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">メンバー</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">タスク</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ポイント</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">承認状態</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tasksTableBody" class="bg-white divide-y divide-gray-200">
+            <!-- データはJavaScriptで挿入 -->
+          </tbody>
+        </table>
       </div>
     </div>
     </main>
@@ -262,6 +306,19 @@ requireAdmin();
         pageTitle.textContent = 'タスク承認';
       }
 
+      // サイドバーのタブハイライト更新
+      document.getElementById('salesTabLink').className = 'flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200';
+      document.getElementById('actionsTabLink').className = 'flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200';
+      document.getElementById('tasksTabLink').className = 'flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200';
+
+      if (tab === 'sales') {
+        document.getElementById('salesTabLink').className = 'flex items-center px-6 py-2 pl-12 text-sm text-blue-600 font-medium bg-blue-50 hover:bg-blue-100';
+      } else if (tab === 'actions') {
+        document.getElementById('actionsTabLink').className = 'flex items-center px-6 py-2 pl-12 text-sm text-blue-600 font-medium bg-blue-50 hover:bg-blue-100';
+      } else if (tab === 'tasks') {
+        document.getElementById('tasksTabLink').className = 'flex items-center px-6 py-2 pl-12 text-sm text-blue-600 font-medium bg-blue-50 hover:bg-blue-100';
+      }
+
       // コンテンツ表示切り替え
       document.getElementById('salesTab').classList.toggle('hidden', tab !== 'sales');
       document.getElementById('actionsTab').classList.toggle('hidden', tab !== 'actions');
@@ -270,6 +327,10 @@ requireAdmin();
       // データ読み込み
       if (tab === 'sales') {
         loadSales();
+      } else if (tab === 'actions') {
+        loadActions();
+      } else if (tab === 'tasks') {
+        loadTasks();
       }
     }
 
@@ -474,6 +535,230 @@ requireAdmin();
         alert('エラーが発生しました。');
       }
     });
+
+    // アクション承認待ち一覧取得
+    async function loadActions() {
+      try {
+        const response = await fetch('/api/action_approvals.php');
+        const result = await response.json();
+
+        if (result.success) {
+          renderActionsTable(result.data);
+        } else {
+          alert('データの取得に失敗しました。');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('エラーが発生しました。');
+      }
+    }
+
+    // アクションテーブル描画
+    function renderActionsTable(actions) {
+      const tbody = document.getElementById('actionsTableBody');
+      tbody.innerHTML = '';
+
+      if (actions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">承認待ちのアクションはありません</td></tr>';
+        return;
+      }
+
+      actions.forEach(action => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(action.date)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(action.member_name)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(action.action_name)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${action.point}pt</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+              ${escapeHtml(action.approval_status)}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+            <button onclick='approveAction(${action.id})' class="text-green-600 hover:text-green-900">承認</button>
+            <button onclick='rejectAction(${action.id})' class="text-red-600 hover:text-red-900">却下</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // タスク承認待ち一覧取得
+    async function loadTasks() {
+      try {
+        const response = await fetch('/api/task_approvals.php');
+        const result = await response.json();
+
+        if (result.success) {
+          renderTasksTable(result.data);
+        } else {
+          alert('データの取得に失敗しました。');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('エラーが発生しました。');
+      }
+    }
+
+    // タスクテーブル描画
+    function renderTasksTable(tasks) {
+      const tbody = document.getElementById('tasksTableBody');
+      tbody.innerHTML = '';
+
+      if (tasks.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">承認待ちのタスクはありません</td></tr>';
+        return;
+      }
+
+      tasks.forEach(task => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(task.date)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(task.member_name)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(task.task_name)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${task.point}pt</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+              ${escapeHtml(task.approval_status)}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+            <button onclick='approveTask(${task.id})' class="text-green-600 hover:text-green-900">承認</button>
+            <button onclick='rejectTask(${task.id})' class="text-red-600 hover:text-red-900">却下</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // アクション承認
+    async function approveAction(actionId) {
+      if (!confirm('このアクションを承認しますか？')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/action_approvals.php?id=${actionId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'approve'
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert(result.message);
+          loadActions();
+        } else {
+          alert(result.message);
+        }
+      } catch (error) {
+        console.error(error);
+        alert('エラーが発生しました。');
+      }
+    }
+
+    // アクション却下
+    async function rejectAction(actionId) {
+      const reason = prompt('却下理由を入力してください：');
+      if (!reason) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/action_approvals.php?id=${actionId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'reject',
+            reject_reason: reason
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert(result.message);
+          loadActions();
+        } else {
+          alert(result.message);
+        }
+      } catch (error) {
+        console.error(error);
+        alert('エラーが発生しました。');
+      }
+    }
+
+    // タスク承認
+    async function approveTask(taskId) {
+      if (!confirm('このタスクを承認しますか？')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/task_approvals.php?id=${taskId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'approve'
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert(result.message);
+          loadTasks();
+        } else {
+          alert(result.message);
+        }
+      } catch (error) {
+        console.error(error);
+        alert('エラーが発生しました。');
+      }
+    }
+
+    // タスク却下
+    async function rejectTask(taskId) {
+      const reason = prompt('却下理由を入力してください：');
+      if (!reason) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/task_approvals.php?id=${taskId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'reject',
+            reject_reason: reason
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert(result.message);
+          loadTasks();
+        } else {
+          alert(result.message);
+        }
+      } catch (error) {
+        console.error(error);
+        alert('エラーが発生しました。');
+      }
+    }
 
     // HTMLエスケープ
     function escapeHtml(text) {

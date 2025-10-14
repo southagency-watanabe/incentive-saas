@@ -26,9 +26,8 @@ $products = $stmt->fetchAll();
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ダッシュボード - インセンティブSaaS</title>
+  <title>ランキングサマリー - インセンティブSaaS</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 
 <body class="bg-gray-100 min-h-screen flex">
@@ -42,17 +41,62 @@ $products = $stmt->fetchAll();
     <!-- ナビゲーション -->
     <nav class="flex-1 overflow-y-auto py-4">
       <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
-        <span class="font-medium">ダッシュボード</span>
+        <span class="font-medium">ランキングサマリー</span>
       </a>
-      <a href="/admin/masters/members.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>マスタ管理</span>
-      </a>
+      <!-- マスタ管理ドロップダウン -->
+      <div>
+        <button onclick="toggleMasterMenu()" class="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+          <span>マスタ管理</span>
+          <svg id="masterArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="masterSubmenu" class="hidden bg-gray-50">
+          <a href="/admin/masters/members.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>メンバー</span>
+          </a>
+          <a href="/admin/masters/teams.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>チーム</span>
+          </a>
+          <a href="/admin/masters/products.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>商品</span>
+          </a>
+          <a href="/admin/masters/actions.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>アクション</span>
+          </a>
+          <a href="/admin/masters/tasks.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>タスク</span>
+          </a>
+          <a href="/admin/masters/events.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>イベント</span>
+          </a>
+        </div>
+      </div>
       <a href="/admin/sales/input.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>売上管理</span>
       </a>
-      <a href="/admin/approvals.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>承認管理</span>
-      </a>
+
+      <!-- 承認管理ドロップダウン -->
+      <div>
+        <button onclick="toggleApprovalMenu()" class="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+          <span>承認管理</span>
+          <svg id="approvalArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="approvalSubmenu" class="hidden bg-gray-50">
+          <a href="/admin/approvals.php?tab=sales" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>売上承認</span>
+          </a>
+          <a href="/admin/approvals.php?tab=actions" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>アクション承認</span>
+          </a>
+          <a href="/admin/approvals.php?tab=tasks" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>タスク承認</span>
+          </a>
+        </div>
+      </div>
+
       <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>実績管理</span>
       </a>
@@ -75,219 +119,97 @@ $products = $stmt->fetchAll();
     <!-- ページヘッダー -->
     <header class="bg-white shadow-sm border-b">
       <div class="px-8 py-6">
-        <h2 class="text-2xl font-bold text-gray-800">ダッシュボード</h2>
+        <h2 class="text-2xl font-bold text-gray-800">🏆 ランキングサマリー</h2>
       </div>
     </header>
 
     <!-- メインコンテンツ -->
     <main class="px-8 py-8">
-    <!-- フィルタエリア -->
-    <div class="bg-white rounded-lg shadow mb-6">
-      <!-- フィルタヘッダー（常に表示） -->
-      <div class="p-6 cursor-pointer" onclick="toggleFilterDetails()">
-        <div class="flex justify-between items-center">
+      <!-- フィルタエリア -->
+      <div class="bg-white rounded-lg shadow mb-6">
+        <div class="p-6">
           <div class="flex-1">
-            <div class="flex justify-between items-center mb-2">
-              <h2 class="text-lg font-bold text-gray-800">フィルタ</h2>
-              <button onclick="event.stopPropagation(); resetFilters()" class="text-sm text-gray-600 hover:text-gray-900">リセット</button>
-            </div>
-            <!-- 期間フィルタ（常に表示） -->
+            <!-- 期間フィルタ -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">期間</label>
-              <div class="flex gap-2 items-center" onclick="event.stopPropagation()">
+              <div class="flex gap-2 items-center flex-wrap">
                 <input type="date" id="startDate" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                 <span>〜</span>
                 <input type="date" id="endDate" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                 <select id="periodPreset" onchange="applyPreset()" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                  <option value="">プリセット</option>
                   <option value="today">今日</option>
                   <option value="this_week">今週</option>
                   <option value="this_month" selected>今月</option>
                   <option value="last_month">先月</option>
                   <option value="this_quarter">今四半期</option>
                   <option value="this_year">今年</option>
-                  <option value="last_30days">過去30日</option>
                 </select>
+                <button onclick="applyFilters()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                  適用
+                </button>
+                <button onclick="resetFilters()" class="bg-gray-200 text-gray-700 px-6 py-2 rounded hover:bg-gray-300">
+                  リセット
+                </button>
               </div>
             </div>
           </div>
-          <div class="ml-4">
-            <svg id="filterArrow" class="w-6 h-6 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-          </div>
         </div>
       </div>
 
-      <!-- フィルタ詳細（開閉可能） -->
-      <div id="filterDetails" class="hidden">
-        <div class="p-6 pt-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <!-- テキスト検索 -->
-            <div class="col-span-full">
-              <label class="block text-sm font-medium text-gray-700 mb-2">テキスト検索</label>
-              <input type="text" id="searchText" placeholder="商品名、メンバー名で検索..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <!-- メンバーフィルタ -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">メンバー</label>
-              <div class="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto bg-white">
-                <?php foreach ($members as $member): ?>
-                  <label class="flex items-center space-x-2 mb-1">
-                    <input type="checkbox" name="member_ids[]" value="<?= htmlspecialchars($member['member_id']) ?>" class="rounded">
-                    <span class="text-sm"><?= htmlspecialchars($member['name']) ?></span>
-                  </label>
-                <?php endforeach; ?>
-              </div>
-            </div>
-
-            <!-- チームフィルタ -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">チーム</label>
-              <div class="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto bg-white">
-                <?php foreach ($teams as $team): ?>
-                  <label class="flex items-center space-x-2 mb-1">
-                    <input type="checkbox" name="team_ids[]" value="<?= htmlspecialchars($team['team_id']) ?>" class="rounded">
-                    <span class="text-sm"><?= htmlspecialchars($team['team_name']) ?></span>
-                  </label>
-                <?php endforeach; ?>
-              </div>
-            </div>
-
-            <!-- 商品フィルタ -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">商品</label>
-              <div class="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto bg-white">
-                <?php foreach ($products as $product): ?>
-                  <label class="flex items-center space-x-2 mb-1">
-                    <input type="checkbox" name="product_ids[]" value="<?= htmlspecialchars($product['product_id']) ?>" class="rounded">
-                    <span class="text-sm"><?= htmlspecialchars($product['product_name']) ?></span>
-                  </label>
-                <?php endforeach; ?>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-4 flex justify-end">
-            <button onclick="applyFilters()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-              適用
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- スコアカード -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-      <!-- 売上金額 -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-sm font-medium text-gray-500 mb-2">商品別売上金額</h3>
-        <div class="text-3xl font-bold text-gray-900 mb-2" id="salesAmount">¥0</div>
-        <div id="salesDiff" class="text-sm">
-          <span class="font-medium">-</span>
-          <span class="text-gray-500">対前期間</span>
-        </div>
-      </div>
-
-      <!-- 売上件数 -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-sm font-medium text-gray-500 mb-2">商品別売上件数</h3>
-        <div class="text-3xl font-bold text-gray-900 mb-2" id="salesCount">0件</div>
-        <div id="countDiff" class="text-sm">
-          <span class="font-medium">-</span>
-          <span class="text-gray-500">対前期間</span>
-        </div>
-      </div>
-
-      <!-- 粗利益 -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-sm font-medium text-gray-500 mb-2">商品別粗利益</h3>
-        <div class="text-3xl font-bold text-gray-900 mb-2" id="profitAmount">¥0</div>
-        <div id="profitDiff" class="text-sm">
-          <span class="font-medium">-</span>
-          <span class="text-gray-500">対前期間</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 売上推移グラフ -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold text-gray-800">売上推移</h3>
-        <select id="granularity" onchange="applyFilters()" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-          <option value="daily">日別</option>
-          <option value="weekly">週別</option>
-          <option value="monthly" selected>月別</option>
-          <option value="quarterly">四半期</option>
-          <option value="yearly">年間</option>
-        </select>
-      </div>
-      <canvas id="trendChart" height="80"></canvas>
-    </div>
-
-    <!-- 商品別売上/粗利テーブル -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-      <div class="p-6 border-b">
-        <h3 class="text-lg font-bold text-gray-800">商品別売上/粗利</h3>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" onclick="sortTable('product_name')">
-                商品名 <span id="sort_product_name"></span>
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer" onclick="sortTable('sales')">
-                売上金額 <span id="sort_sales"></span>
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer" onclick="sortTable('profit')">
-                粗利益 <span id="sort_profit"></span>
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer" onclick="sortTable('quantity')">
-                数量 <span id="sort_quantity"></span>
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer" onclick="sortTable('count')">
-                件数 <span id="sort_count"></span>
-              </th>
-            </tr>
-          </thead>
-          <tbody id="productTableBody" class="bg-white divide-y divide-gray-200">
+      <!-- ランキングセクション -->
+      <div class="grid grid-cols-2 gap-6">
+        <!-- 売上金額ランキング -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">💰 売上金額TOP10</h3>
+          <div id="salesRanking" class="space-y-2">
             <!-- データはJavaScriptで挿入 -->
-          </tbody>
-        </table>
+          </div>
+        </div>
+
+        <!-- ポイント獲得ランキング -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">⭐ ポイント獲得TOP10</h3>
+          <div id="pointsRanking" class="space-y-2">
+            <!-- データはJavaScriptで挿入 -->
+          </div>
+        </div>
       </div>
-    </div>
     </main>
   </div>
 
   <script>
-    let currentData = null;
-    let trendChart = null;
-    let currentSort = {
-      column: 'sales',
-      direction: 'desc'
-    };
-    let filterDetailsOpen = false;
+    let currentApprovalFilter = 'approved';
 
-    // 初期化
+    // 初期読み込み
     document.addEventListener('DOMContentLoaded', () => {
       applyPreset(); // デフォルトで今月を設定
       applyFilters();
     });
 
-    // フィルタ詳細の開閉
-    function toggleFilterDetails() {
-      const details = document.getElementById('filterDetails');
-      const arrow = document.getElementById('filterArrow');
+    // マスタ管理ドロップダウンの開閉
+    function toggleMasterMenu() {
+      const submenu = document.getElementById('masterSubmenu');
+      const arrow = document.getElementById('masterArrow');
 
-      filterDetailsOpen = !filterDetailsOpen;
-
-      if (filterDetailsOpen) {
-        details.classList.remove('hidden');
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
         arrow.style.transform = 'rotate(180deg)';
       } else {
-        details.classList.add('hidden');
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // 承認管理ドロップダウンの開閉
+    function toggleApprovalMenu() {
+      const submenu = document.getElementById('approvalSubmenu');
+      const arrow = document.getElementById('approvalArrow');
+
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
         arrow.style.transform = 'rotate(0deg)';
       }
     }
@@ -326,12 +248,6 @@ $products = $stmt->fetchAll();
           startDate = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
           endDate = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
           break;
-        case 'last_30days':
-          const past30 = new Date(today);
-          past30.setDate(today.getDate() - 30);
-          startDate = past30.toISOString().split('T')[0];
-          endDate = today.toISOString().split('T')[0];
-          break;
         default:
           return;
       }
@@ -344,8 +260,6 @@ $products = $stmt->fetchAll();
     function resetFilters() {
       document.getElementById('periodPreset').value = 'this_month';
       applyPreset();
-      document.getElementById('searchText').value = '';
-      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
       applyFilters();
     }
 
@@ -354,35 +268,19 @@ $products = $stmt->fetchAll();
       try {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-        const searchText = document.getElementById('searchText').value;
-        const granularity = document.getElementById('granularity').value;
 
-        const memberIds = Array.from(document.querySelectorAll('input[name="member_ids[]"]:checked'))
-          .map(cb => cb.value).join(',');
-        const teamIds = Array.from(document.querySelectorAll('input[name="team_ids[]"]:checked'))
-          .map(cb => cb.value).join(',');
-        const productIds = Array.from(document.querySelectorAll('input[name="product_ids[]"]:checked'))
-          .map(cb => cb.value).join(',');
+        if (!startDate || !endDate) {
+          alert('開始日と終了日を選択してください。');
+          return;
+        }
 
-        const params = new URLSearchParams({
-          start_date: startDate,
-          end_date: endDate,
-          search_text: searchText,
-          granularity: granularity
-        });
-
-        if (memberIds) params.append('member_ids', memberIds);
-        if (teamIds) params.append('team_ids', teamIds);
-        if (productIds) params.append('product_ids', productIds);
-
-        const response = await fetch(`/api/dashboard.php?${params}`);
+        // 実績管理データ取得
+        const url = `/api/performance.php?period=custom&start_date=${startDate}&end_date=${endDate}&approval_filter=${currentApprovalFilter}`;
+        const response = await fetch(url);
         const result = await response.json();
 
         if (result.success) {
-          currentData = result;
-          updateScoreCards(result.score_cards);
-          updateTrendChart(result.trend);
-          updateProductTable(result.products);
+          renderRankings(result.rankings);
         } else {
           alert('データの取得に失敗しました。');
         }
@@ -392,154 +290,49 @@ $products = $stmt->fetchAll();
       }
     }
 
-    // スコアカード更新
-    function updateScoreCards(scoreCards) {
-      // 売上金額
-      document.getElementById('salesAmount').textContent = '¥' + scoreCards.sales.current.toLocaleString();
-      document.getElementById('salesDiff').innerHTML = formatDiff(scoreCards.sales.diff, scoreCards.sales.diff_percent);
+    // ランキング描画
+    function renderRankings(rankings) {
+      // 売上金額ランキング
+      const salesRanking = document.getElementById('salesRanking');
+      salesRanking.innerHTML = '';
 
-      // 売上件数
-      document.getElementById('salesCount').textContent = scoreCards.count.current.toLocaleString() + '件';
-      document.getElementById('countDiff').innerHTML = formatDiff(scoreCards.count.diff, scoreCards.count.diff_percent);
-
-      // 粗利益
-      document.getElementById('profitAmount').textContent = '¥' + scoreCards.profit.current.toLocaleString();
-      document.getElementById('profitDiff').innerHTML = formatDiff(scoreCards.profit.diff, scoreCards.profit.diff_percent);
-    }
-
-    // 差分フォーマット
-    function formatDiff(diff, percent) {
-      const sign = diff >= 0 ? '+' : '';
-      const color = diff >= 0 ? 'text-green-600' : 'text-red-600';
-      const percentStr = percent.toFixed(1) + '%';
-      const diffStr = '¥' + Math.abs(diff).toLocaleString();
-      return `<span class="font-medium ${color}">${sign}${percentStr} (${sign}${diffStr})</span> <span class="text-gray-500">対前期間</span>`;
-    }
-
-    // グラフ更新
-    function updateTrendChart(trendData) {
-      const ctx = document.getElementById('trendChart').getContext('2d');
-
-      if (trendChart) {
-        trendChart.destroy();
-      }
-
-      trendChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: trendData.map(d => d.period),
-          datasets: [{
-              label: '売上金額',
-              data: trendData.map(d => d.sales),
-              borderColor: 'rgb(59, 130, 246)',
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              tension: 0.4
-            },
-            {
-              label: '粗利益',
-              data: trendData.map(d => d.profit),
-              borderColor: 'rgb(34, 197, 94)',
-              backgroundColor: 'rgba(34, 197, 94, 0.1)',
-              tension: 0.4
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: {
-            legend: {
-              position: 'top',
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                callback: function(value) {
-                  return '¥' + value.toLocaleString();
-                }
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // 商品テーブル更新
-    function updateProductTable(products) {
-      const tbody = document.getElementById('productTableBody');
-      tbody.innerHTML = '';
-
-      if (products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
-        return;
-      }
-
-      // ソート適用
-      const sortedProducts = sortData(products);
-
-      sortedProducts.forEach(product => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(product.product_name)}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">¥${parseFloat(product.sales).toLocaleString()}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">¥${parseFloat(product.profit).toLocaleString()}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${parseInt(product.quantity).toLocaleString()}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${parseInt(product.count).toLocaleString()}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      updateSortIndicators();
-    }
-
-    // テーブルソート
-    function sortTable(column) {
-      if (currentSort.column === column) {
-        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+      if (rankings.sales.length === 0) {
+        salesRanking.innerHTML = '<p class="text-gray-500 text-center py-4">データがありません</p>';
       } else {
-        currentSort.column = column;
-        currentSort.direction = 'desc';
+        rankings.sales.forEach((member, index) => {
+          const div = document.createElement('div');
+          div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded';
+          div.innerHTML = `
+            <div class="flex items-center gap-3">
+              <span class="text-lg font-bold ${index < 3 ? 'text-yellow-500' : 'text-gray-500'}">${index + 1}</span>
+              <span class="font-medium">${escapeHtml(member.member_name)}</span>
+            </div>
+            <span class="font-bold text-gray-900">¥${parseFloat(member.total_sales).toLocaleString()}</span>
+          `;
+          salesRanking.appendChild(div);
+        });
       }
 
-      if (currentData) {
-        updateProductTable(currentData.products);
+      // ポイント獲得ランキング
+      const pointsRanking = document.getElementById('pointsRanking');
+      pointsRanking.innerHTML = '';
+
+      if (rankings.points.length === 0) {
+        pointsRanking.innerHTML = '<p class="text-gray-500 text-center py-4">データがありません</p>';
+      } else {
+        rankings.points.forEach((member, index) => {
+          const div = document.createElement('div');
+          div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded';
+          div.innerHTML = `
+            <div class="flex items-center gap-3">
+              <span class="text-lg font-bold ${index < 3 ? 'text-yellow-500' : 'text-gray-500'}">${index + 1}</span>
+              <span class="font-medium">${escapeHtml(member.member_name)}</span>
+            </div>
+            <span class="font-bold text-blue-600">${member.final_points}pt</span>
+          `;
+          pointsRanking.appendChild(div);
+        });
       }
-    }
-
-    // データソート
-    function sortData(data) {
-      const sorted = [...data];
-      sorted.sort((a, b) => {
-        let aVal = a[currentSort.column];
-        let bVal = b[currentSort.column];
-
-        // 数値の場合は数値として比較
-        if (typeof aVal === 'string' && !isNaN(parseFloat(aVal))) {
-          aVal = parseFloat(aVal);
-          bVal = parseFloat(bVal);
-        }
-
-        if (currentSort.direction === 'asc') {
-          return aVal > bVal ? 1 : -1;
-        } else {
-          return aVal < bVal ? 1 : -1;
-        }
-      });
-      return sorted;
-    }
-
-    // ソートインジケーター更新
-    function updateSortIndicators() {
-      ['product_name', 'sales', 'profit', 'quantity', 'count'].forEach(col => {
-        const indicator = document.getElementById(`sort_${col}`);
-        if (currentSort.column === col) {
-          indicator.textContent = currentSort.direction === 'asc' ? '▲' : '▼';
-        } else {
-          indicator.textContent = '';
-        }
-      });
     }
 
     // HTMLエスケープ

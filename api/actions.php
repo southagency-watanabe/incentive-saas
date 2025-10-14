@@ -39,6 +39,11 @@ try {
       $stmt->execute(['tenant_id' => $tenant_id]);
       $actions = $stmt->fetchAll();
 
+      // approval_requiredを「必要」「不要」に変換
+      foreach ($actions as &$action) {
+        $action['approval_required'] = $action['approval_required'] ? '必要' : '不要';
+      }
+
       echo json_encode([
         'success' => true,
         'data' => $actions
@@ -87,6 +92,9 @@ try {
       }
       $action_id = 'ACT' . str_pad($newNum, 3, '0', STR_PAD_LEFT);
 
+      // approval_requiredを0/1に変換
+      $approval_required_bool = ($input['approval_required'] === '必要') ? 1 : 0;
+
       // 登録
       $stmt = $pdo->prepare("
                 INSERT INTO actions (
@@ -113,7 +121,7 @@ try {
         'status' => $input['status'],
         'description' => $input['description'] ?? null,
         'point' => $input['point'],
-        'approval_required' => $input['approval_required']
+        'approval_required' => $approval_required_bool
       ]);
 
       // 監査ログ
@@ -169,6 +177,9 @@ try {
         exit;
       }
 
+      // approval_requiredを0/1に変換
+      $approval_required_bool = ($input['approval_required'] === '必要') ? 1 : 0;
+
       // 更新
       $stmt = $pdo->prepare("
                 UPDATE actions SET
@@ -197,7 +208,7 @@ try {
         'status' => $input['status'],
         'description' => $input['description'] ?? null,
         'point' => $input['point'],
-        'approval_required' => $input['approval_required'],
+        'approval_required' => $approval_required_bool,
         'tenant_id' => $tenant_id,
         'action_id' => $action_id
       ]);

@@ -40,6 +40,11 @@ try {
       $stmt->execute(['tenant_id' => $tenant_id]);
       $tasks = $stmt->fetchAll();
 
+      // approval_requiredを「必要」「不要」に変換
+      foreach ($tasks as &$task) {
+        $task['approval_required'] = $task['approval_required'] ? '必要' : '不要';
+      }
+
       echo json_encode([
         'success' => true,
         'data' => $tasks
@@ -118,6 +123,9 @@ try {
         $day_of_month = $input['day_of_month'];
       }
 
+      // approval_requiredを0/1に変換
+      $approval_required_bool = ($input['approval_required'] === '必要') ? 1 : 0;
+
       // 登録
       $stmt = $pdo->prepare("
                 INSERT INTO tasks (
@@ -143,7 +151,7 @@ try {
         'end_datetime' => $input['end_datetime'] ?: null,
         'point' => $input['point'],
         'daily_limit' => $input['daily_limit'],
-        'approval_required' => $input['approval_required'],
+        'approval_required' => $approval_required_bool,
         'status' => $input['status'],
         'description' => $input['description'] ?? null
       ]);
@@ -231,6 +239,9 @@ try {
         $day_of_month = $input['day_of_month'];
       }
 
+      // approval_requiredを0/1に変換
+      $approval_required_bool = ($input['approval_required'] === '必要') ? 1 : 0;
+
       // 更新
       $stmt = $pdo->prepare("
                 UPDATE tasks SET
@@ -259,7 +270,7 @@ try {
         'end_datetime' => $input['end_datetime'] ?: null,
         'point' => $input['point'],
         'daily_limit' => $input['daily_limit'],
-        'approval_required' => $input['approval_required'],
+        'approval_required' => $approval_required_bool,
         'status' => $input['status'],
         'description' => $input['description'] ?? null,
         'tenant_id' => $tenant_id,

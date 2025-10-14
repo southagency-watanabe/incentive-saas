@@ -38,6 +38,11 @@ try {
       $stmt->execute(['tenant_id' => $tenant_id]);
       $products = $stmt->fetchAll();
 
+      // approval_requiredを「必要」「不要」に変換
+      foreach ($products as &$product) {
+        $product['approval_required'] = $product['approval_required'] ? '必要' : '不要';
+      }
+
       echo json_encode([
         'success' => true,
         'data' => $products
@@ -85,10 +90,13 @@ try {
       }
       $product_id = 'PRD' . str_pad($newNum, 3, '0', STR_PAD_LEFT);
 
+      // approval_requiredを0/1に変換
+      $approval_required_bool = ($input['approval_required'] === '必要') ? 1 : 0;
+
       // 登録
       $stmt = $pdo->prepare("
                 INSERT INTO products (
-                    product_id, tenant_id, product_name, large_category, 
+                    product_id, tenant_id, product_name, large_category,
                     medium_category, small_category, point, price, cost,
                     status, approval_required, description
                 ) VALUES (
@@ -109,7 +117,7 @@ try {
         'price' => $input['price'],
         'cost' => ($input['cost'] !== '' && $input['cost'] !== null) ? $input['cost'] : null,
         'status' => $input['status'],
-        'approval_required' => $input['approval_required'],
+        'approval_required' => $approval_required_bool,
         'description' => $input['description'] ?? null
       ]);
 
@@ -165,6 +173,9 @@ try {
         exit;
       }
 
+      // approval_requiredを0/1に変換
+      $approval_required_bool = ($input['approval_required'] === '必要') ? 1 : 0;
+
       // 更新
       $stmt = $pdo->prepare("
                 UPDATE products SET
@@ -190,7 +201,7 @@ try {
         'price' => $input['price'],
         'cost' => ($input['cost'] !== '' && $input['cost'] !== null) ? $input['cost'] : null,
         'status' => $input['status'],
-        'approval_required' => $input['approval_required'],
+        'approval_required' => $approval_required_bool,
         'description' => $input['description'] ?? null,
         'tenant_id' => $tenant_id,
         'product_id' => $product_id

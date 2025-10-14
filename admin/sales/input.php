@@ -46,7 +46,7 @@ $productsJson = json_encode($products);
 
     <!-- ナビゲーション -->
     <nav class="flex-1 overflow-y-auto py-4">
-      <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+      <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>ランキングサマリー</span>
       </a>
       <!-- マスタ管理ドロップダウン -->
