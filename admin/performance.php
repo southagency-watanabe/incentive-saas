@@ -98,9 +98,30 @@ $products = $stmt->fetchAll();
         </div>
       </div>
 
-      <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
-        <span class="font-medium">実績管理</span>
-      </a>
+      <!-- 実績管理ドロップダウン -->
+      <div>
+        <button onclick="togglePerformanceMenu()" class="w-full flex items-center justify-between px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
+          <span class="font-medium">実績管理</span>
+          <svg id="performanceArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="performanceSubmenu" class="bg-gray-50">
+          <a href="/admin/performance/daily.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>日別</span>
+          </a>
+          <a href="/admin/performance/weekly.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>週別</span>
+          </a>
+          <a href="/admin/performance/monthly.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>月別</span>
+          </a>
+          <a href="/admin/performance/dayofweek.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>曜日別</span>
+          </a>
+        </div>
+      </div>
+
       <a href="/admin/events.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>イベント</span>
       </a>
@@ -249,36 +270,50 @@ $products = $stmt->fetchAll();
       <canvas id="dashTrendChart" height="80"></canvas>
     </div>
 
-    <!-- 商品別売上/粗利テーブル -->
-    <div class="bg-white rounded-lg shadow overflow-hidden mb-8">
-      <div class="p-6 border-b">
-        <h3 class="text-lg font-bold text-gray-800">商品別売上/粗利</h3>
+    <!-- 日毎の売上テーブル -->
+    <div class="bg-white rounded-lg shadow mb-6">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">日毎の売上</h3>
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" onclick="sortDashTable('product_name')">
-                商品名 <span id="dash_sort_product_name"></span>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortDailyTable('date')">
+                日付
+                <span id="sortIndicatorDailyDate" class="ml-1">▼</span>
               </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer" onclick="sortDashTable('sales')">
-                売上金額 <span id="dash_sort_sales"></span>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortDailyTable('sales_count')">
+                売上件数
+                <span id="sortIndicatorDailySalesCount" class="ml-1"></span>
               </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer" onclick="sortDashTable('profit')">
-                粗利益 <span id="dash_sort_profit"></span>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortDailyTable('total_sales')">
+                売上金額
+                <span id="sortIndicatorDailyTotalSales" class="ml-1"></span>
               </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer" onclick="sortDashTable('quantity')">
-                数量 <span id="dash_sort_quantity"></span>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortDailyTable('total_profit')">
+                粗利
+                <span id="sortIndicatorDailyTotalProfit" class="ml-1"></span>
               </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer" onclick="sortDashTable('count')">
-                件数 <span id="dash_sort_count"></span>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortDailyTable('total_points')">
+                付与ポイント
+                <span id="sortIndicatorDailyTotalPoints" class="ml-1"></span>
               </th>
             </tr>
           </thead>
-          <tbody id="dashProductTableBody" class="bg-white divide-y divide-gray-200">
+          <tbody id="dailySalesTableBody" class="bg-white divide-y divide-gray-200">
             <!-- データはJavaScriptで挿入 -->
           </tbody>
         </table>
+      </div>
+      <!-- ページネーション -->
+      <div id="dailyPagination" class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+        <div class="text-sm text-gray-500">
+          <span id="dailyPageInfo">1-20 / 0件</span>
+        </div>
+        <div class="flex gap-1" id="dailyPageButtons">
+          <!-- ページボタンはJavaScriptで挿入 -->
+        </div>
       </div>
     </div>
 
@@ -322,6 +357,9 @@ $products = $stmt->fetchAll();
           <button id="graphTabMemberProfit" onclick="switchGraphTab('member_profit')" class="px-4 py-2 rounded bg-gray-200 text-gray-700">
             メンバー別粗利益
           </button>
+          <button id="graphTabTeamSales" onclick="switchGraphTab('team_sales')" class="px-4 py-2 rounded bg-gray-200 text-gray-700">
+            チーム別売上
+          </button>
         </div>
         <div class="flex gap-2">
           <button id="btnApproved" onclick="toggleApprovalFilter('approved')" class="px-4 py-2 rounded bg-blue-600 text-white font-medium">
@@ -354,13 +392,26 @@ $products = $stmt->fetchAll();
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">メンバー</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">チーム</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">売上件数</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">売上金額</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">基本ポイント</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">最終ポイント</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">平均倍率</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortMembersTable('member_name')">
+              メンバー
+              <span id="sortIndicatorMemberName" class="ml-1"></span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortMembersTable('team_name')">
+              チーム
+              <span id="sortIndicatorTeamName" class="ml-1"></span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortMembersTable('sales_count')">
+              売上件数
+              <span id="sortIndicatorSalesCount" class="ml-1"></span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortMembersTable('total_sales')">
+              売上金額
+              <span id="sortIndicatorTotalSales" class="ml-1"></span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortMembersTable('final_points')">
+              付与ポイント
+              <span id="sortIndicatorFinalPoints" class="ml-1">▼</span>
+            </th>
           </tr>
         </thead>
         <tbody id="membersTableBody" class="bg-white divide-y divide-gray-200">
@@ -374,11 +425,30 @@ $products = $stmt->fetchAll();
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">商品名</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">販売数量</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">売上金額</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">付与ポイント</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">平均単価</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortProductsTable('product_name')">
+              商品名
+              <span id="sortIndicatorProductName" class="ml-1"></span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortProductsTable('total_quantity')">
+              販売数量
+              <span id="sortIndicatorTotalQuantity" class="ml-1"></span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortProductsTable('total_sales')">
+              売上金額
+              <span id="sortIndicatorProductTotalSales" class="ml-1">▼</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortProductsTable('total_profit')">
+              粗利
+              <span id="sortIndicatorTotalProfit" class="ml-1"></span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortProductsTable('total_points')">
+              付与ポイント
+              <span id="sortIndicatorTotalPoints" class="ml-1"></span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortProductsTable('avg_price')">
+              平均単価
+              <span id="sortIndicatorAvgPrice" class="ml-1"></span>
+            </th>
           </tr>
         </thead>
         <tbody id="productsTableBody" class="bg-white divide-y divide-gray-200">
@@ -419,11 +489,30 @@ $products = $stmt->fetchAll();
       }
     }
 
+    // 実績管理ドロップダウンの開閉
+    function togglePerformanceMenu() {
+      const submenu = document.getElementById('performanceSubmenu');
+      const arrow = document.getElementById('performanceArrow');
+
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
     let currentTab = 'members';
     let currentApprovalFilter = 'approved';
     let currentGraphTab = 'product_sales';
     let salesChart = null;
     let cachedGraphData = null;
+    let dailySalesData = [];
+    let dailySortColumn = 'date';
+    let dailySortOrder = 'desc'; // 'asc' or 'desc'
+    let dailyCurrentPage = 1;
+    let dailyItemsPerPage = 20;
 
     // 初期読み込み
     document.addEventListener('DOMContentLoaded', () => {
@@ -465,7 +554,7 @@ $products = $stmt->fetchAll();
       tbody.innerHTML = '';
 
       if (members.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
         return;
       }
 
@@ -476,9 +565,7 @@ $products = $stmt->fetchAll();
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(member.team_name || '-')}</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${member.sales_count}件</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${parseFloat(member.total_sales).toLocaleString()}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${member.base_points}pt</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">${member.final_points}pt</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${parseFloat(member.avg_multiplier).toFixed(2)}倍</td>
         `;
         tbody.appendChild(tr);
       });
@@ -490,7 +577,7 @@ $products = $stmt->fetchAll();
       tbody.innerHTML = '';
 
       if (products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
         return;
       }
 
@@ -500,11 +587,234 @@ $products = $stmt->fetchAll();
           <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(product.product_name)}</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${product.total_quantity}個</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${parseFloat(product.total_sales).toLocaleString()}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">¥${parseFloat(product.total_profit || 0).toLocaleString()}</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600">${product.total_points}pt</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${parseFloat(product.avg_price).toLocaleString()}</td>
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    // 日毎の売上テーブル描画
+    function renderDailySalesTable() {
+      const tbody = document.getElementById('dailySalesTableBody');
+      tbody.innerHTML = '';
+
+      if (dailySalesData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+        document.getElementById('dailyPagination').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('dailyPagination').style.display = 'flex';
+
+      // ページネーション計算
+      const totalItems = dailySalesData.length;
+      const totalPages = Math.ceil(totalItems / dailyItemsPerPage);
+      const startIndex = (dailyCurrentPage - 1) * dailyItemsPerPage;
+      const endIndex = Math.min(startIndex + dailyItemsPerPage, totalItems);
+      
+      // 現在のページのデータのみ表示
+      const pageData = dailySalesData.slice(startIndex, endIndex);
+      
+      pageData.forEach(daily => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${daily.date}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${daily.sales_count}件</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${parseFloat(daily.total_sales).toLocaleString()}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">¥${parseFloat(daily.total_profit || 0).toLocaleString()}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600">${daily.total_points}pt</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // ページ情報更新
+      document.getElementById('dailyPageInfo').textContent = `${startIndex + 1}-${endIndex} / ${totalItems}件`;
+      
+      // ページネーションボタン生成
+      renderDailyPagination(totalPages);
+    }
+
+    // ページネーションボタン生成
+    function renderDailyPagination(totalPages) {
+      const container = document.getElementById('dailyPageButtons');
+      container.innerHTML = '';
+
+      if (totalPages <= 1) {
+        return;
+      }
+
+      // 前へボタン
+      if (dailyCurrentPage > 1) {
+        const prevBtn = document.createElement('button');
+        prevBtn.textContent = '‹';
+        prevBtn.className = 'px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300';
+        prevBtn.onclick = () => changeDailyPage(dailyCurrentPage - 1);
+        container.appendChild(prevBtn);
+      }
+
+      // ページ番号ボタン
+      let startPage = Math.max(1, dailyCurrentPage - 2);
+      let endPage = Math.min(totalPages, dailyCurrentPage + 2);
+
+      if (startPage > 1) {
+        const firstBtn = document.createElement('button');
+        firstBtn.textContent = '1';
+        firstBtn.className = 'px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300';
+        firstBtn.onclick = () => changeDailyPage(1);
+        container.appendChild(firstBtn);
+        
+        if (startPage > 2) {
+          const dots = document.createElement('span');
+          dots.textContent = '...';
+          dots.className = 'px-2 text-gray-500';
+          container.appendChild(dots);
+        }
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.textContent = i;
+        pageBtn.className = i === dailyCurrentPage
+          ? 'px-3 py-1 rounded bg-blue-600 text-white font-medium'
+          : 'px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300';
+        pageBtn.onclick = () => changeDailyPage(i);
+        container.appendChild(pageBtn);
+      }
+
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+          const dots = document.createElement('span');
+          dots.textContent = '...';
+          dots.className = 'px-2 text-gray-500';
+          container.appendChild(dots);
+        }
+        
+        const lastBtn = document.createElement('button');
+        lastBtn.textContent = totalPages;
+        lastBtn.className = 'px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300';
+        lastBtn.onclick = () => changeDailyPage(totalPages);
+        container.appendChild(lastBtn);
+      }
+
+      // 次へボタン
+      if (dailyCurrentPage < totalPages) {
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = '›';
+        nextBtn.className = 'px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300';
+        nextBtn.onclick = () => changeDailyPage(dailyCurrentPage + 1);
+        container.appendChild(nextBtn);
+      }
+    }
+
+    // ページ変更
+    function changeDailyPage(page) {
+      dailyCurrentPage = page;
+      renderDailySalesTable();
+    }
+
+    // 日毎の売上テーブルソート
+    function sortDailyTable(column) {
+      // 同じカラムをクリックした場合は昇順/降順を切り替え
+      if (dailySortColumn === column) {
+        dailySortOrder = dailySortOrder === 'desc' ? 'asc' : 'desc';
+      } else {
+        dailySortColumn = column;
+        dailySortOrder = 'desc'; // 新しいカラムは降順から開始
+      }
+
+      // データをソート
+      dailySalesData.sort((a, b) => {
+        let aVal, bVal;
+        
+        switch(column) {
+          case 'date':
+            aVal = a.date;
+            bVal = b.date;
+            break;
+          case 'sales_count':
+            aVal = parseInt(a.sales_count) || 0;
+            bVal = parseInt(b.sales_count) || 0;
+            break;
+          case 'total_sales':
+            aVal = parseFloat(a.total_sales) || 0;
+            bVal = parseFloat(b.total_sales) || 0;
+            break;
+          case 'total_profit':
+            aVal = parseFloat(a.total_profit) || 0;
+            bVal = parseFloat(b.total_profit) || 0;
+            break;
+          case 'total_points':
+            aVal = parseInt(a.total_points) || 0;
+            bVal = parseInt(b.total_points) || 0;
+            break;
+          default:
+            return 0;
+        }
+
+        if (dailySortOrder === 'desc') {
+          return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+        } else {
+          return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+        }
+      });
+      
+      // ソートインジケーター更新
+      updateDailySortIndicators();
+      
+      // ページを1にリセット
+      dailyCurrentPage = 1;
+      
+      renderDailySalesTable();
+    }
+
+    // 日毎の売上ソートインジケーター更新
+    function updateDailySortIndicators() {
+      const indicators = {
+        'date': 'sortIndicatorDailyDate',
+        'sales_count': 'sortIndicatorDailySalesCount',
+        'total_sales': 'sortIndicatorDailyTotalSales',
+        'total_profit': 'sortIndicatorDailyTotalProfit',
+        'total_points': 'sortIndicatorDailyTotalPoints'
+      };
+
+      Object.entries(indicators).forEach(([column, indicatorId]) => {
+        const indicator = document.getElementById(indicatorId);
+        if (!indicator) return;
+        
+        if (column === dailySortColumn) {
+          indicator.textContent = dailySortOrder === 'desc' ? '▼' : '▲';
+        } else {
+          indicator.textContent = '';
+        }
+      });
+    }
+
+    // グラフタブの表示/非表示を切り替え
+    function updateGraphTabsVisibility(hasMemberFilter) {
+      const memberSalesBtn = document.getElementById('graphTabMemberSales');
+      const memberProfitBtn = document.getElementById('graphTabMemberProfit');
+      const teamSalesBtn = document.getElementById('graphTabTeamSales');
+      
+      if (hasMemberFilter) {
+        // メンバーフィルタが適用されている場合は、商品別のみ表示
+        if (memberSalesBtn) memberSalesBtn.style.display = 'none';
+        if (memberProfitBtn) memberProfitBtn.style.display = 'none';
+        if (teamSalesBtn) teamSalesBtn.style.display = 'none';
+        
+        // 現在のタブがメンバー別やチーム別の場合は、商品別売上に切り替え
+        if (currentGraphTab === 'member_sales' || 
+            currentGraphTab === 'member_profit' || 
+            currentGraphTab === 'team_sales') {
+          switchGraphTab('product_sales');
+        }
+      } else {
+        // メンバーフィルタが適用されていない場合は、全て表示
+        if (memberSalesBtn) memberSalesBtn.style.display = '';
+        if (memberProfitBtn) memberProfitBtn.style.display = '';
+        if (teamSalesBtn) teamSalesBtn.style.display = '';
+      }
     }
 
     // グラフ初期化
@@ -557,7 +867,7 @@ $products = $stmt->fetchAll();
       currentGraphTab = tab;
 
       // タブボタンのスタイル更新
-      ['ProductSales', 'MemberSales', 'MemberProfit', 'ProductProfit'].forEach(t => {
+      ['ProductSales', 'MemberSales', 'MemberProfit', 'ProductProfit', 'TeamSales'].forEach(t => {
         const btn = document.getElementById(`graphTab${t}`);
         const tabKey = t.charAt(0).toLowerCase() + t.slice(1).replace(/([A-Z])/g, '_$1').toLowerCase();
         const isActive = tabKey === tab;
@@ -600,6 +910,10 @@ $products = $stmt->fetchAll();
           break;
         case 'product_profit':
           chartLabel = '商品別粗利益';
+          valuePrefix = '¥';
+          break;
+        case 'team_sales':
+          chartLabel = 'チーム別売上';
           valuePrefix = '¥';
           break;
       }
@@ -664,10 +978,6 @@ $products = $stmt->fetchAll();
 
     let dashCurrentData = null;
     let dashTrendChart = null;
-    let dashCurrentSort = {
-      column: 'sales',
-      direction: 'desc'
-    };
     let dashFilterDetailsOpen = false;
 
     // ダッシュボード機能の初期化
@@ -858,7 +1168,6 @@ $products = $stmt->fetchAll();
           dashCurrentData = result;
           updateDashScoreCards(result.score_cards);
           updateDashTrendChart(result.trend);
-          updateDashProductTable(result.products);
         } else {
           alert('データの取得に失敗しました。');
         }
@@ -874,7 +1183,28 @@ $products = $stmt->fetchAll();
     // 実績管理データ取得
     async function loadPerformanceData(startDate, endDate) {
       try {
-        let url = `/api/performance.php?period=custom&start_date=${startDate}&end_date=${endDate}&approval_filter=${currentApprovalFilter}`;
+        // 詳細フィルタのパラメータを収集
+        const memberIds = Array.from(document.querySelectorAll('input[name="dash_member_ids[]"]:checked'))
+          .map(cb => cb.value).join(',');
+        const teamIds = Array.from(document.querySelectorAll('input[name="dash_team_ids[]"]:checked'))
+          .map(cb => cb.value).join(',');
+        const productIds = Array.from(document.querySelectorAll('input[name="dash_product_ids[]"]:checked'))
+          .map(cb => cb.value).join(',');
+        const searchText = document.getElementById('dashSearchText')?.value || '';
+        
+        const params = new URLSearchParams({
+          period: 'custom',
+          start_date: startDate,
+          end_date: endDate,
+          approval_filter: currentApprovalFilter
+        });
+        
+        if (memberIds) params.append('member_ids', memberIds);
+        if (teamIds) params.append('team_ids', teamIds);
+        if (productIds) params.append('product_ids', productIds);
+        if (searchText) params.append('search_text', searchText);
+        
+        let url = `/api/performance.php?${params}`;
 
         const response = await fetch(url);
         const result = await response.json();
@@ -884,7 +1214,21 @@ $products = $stmt->fetchAll();
           renderMembersTable(result.members);
           renderProductsTable(result.products);
           cachedGraphData = result.graphs;
+          
+          // メンバーが選択されているかチェック
+          const hasMemberFilter = memberIds && memberIds.length > 0;
+          updateGraphTabsVisibility(hasMemberFilter);
+          
           updateChartByTab(currentGraphTab);
+          dailySalesData = result.daily_sales || [];
+          // 降順（最新が上）でソート
+          dailySalesData.sort((a, b) => b.date.localeCompare(a.date));
+          dailySortColumn = 'date';
+          dailySortOrder = 'desc';
+          dailyCurrentPage = 1; // ページを1にリセット
+          renderDailySalesTable();
+          // ソートインジケーター更新
+          updateDailySortIndicators();
         } else {
           console.error('実績管理データの取得に失敗しました。');
         }
@@ -988,81 +1332,6 @@ $products = $stmt->fetchAll();
       });
     }
 
-    // 商品テーブル更新
-    function updateDashProductTable(products) {
-      const tbody = document.getElementById('dashProductTableBody');
-      tbody.innerHTML = '';
-
-      if (products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
-        return;
-      }
-
-      // ソート適用
-      const sortedProducts = sortDashData(products);
-
-      sortedProducts.forEach(product => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(product.product_name)}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">¥${parseFloat(product.sales).toLocaleString()}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">¥${parseFloat(product.profit).toLocaleString()}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${parseInt(product.quantity).toLocaleString()}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${parseInt(product.count).toLocaleString()}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      updateDashSortIndicators();
-    }
-
-    // テーブルソート
-    function sortDashTable(column) {
-      if (dashCurrentSort.column === column) {
-        dashCurrentSort.direction = dashCurrentSort.direction === 'asc' ? 'desc' : 'asc';
-      } else {
-        dashCurrentSort.column = column;
-        dashCurrentSort.direction = 'desc';
-      }
-
-      if (dashCurrentData) {
-        updateDashProductTable(dashCurrentData.products);
-      }
-    }
-
-    // データソート
-    function sortDashData(data) {
-      const sorted = [...data];
-      sorted.sort((a, b) => {
-        let aVal = a[dashCurrentSort.column];
-        let bVal = b[dashCurrentSort.column];
-
-        // 数値の場合は数値として比較
-        if (typeof aVal === 'string' && !isNaN(parseFloat(aVal))) {
-          aVal = parseFloat(aVal);
-          bVal = parseFloat(bVal);
-        }
-
-        if (dashCurrentSort.direction === 'asc') {
-          return aVal > bVal ? 1 : -1;
-        } else {
-          return aVal < bVal ? 1 : -1;
-        }
-      });
-      return sorted;
-    }
-
-    // ソートインジケーター更新
-    function updateDashSortIndicators() {
-      ['product_name', 'sales', 'profit', 'quantity', 'count'].forEach(col => {
-        const indicator = document.getElementById(`dash_sort_${col}`);
-        if (dashCurrentSort.column === col) {
-          indicator.textContent = dashCurrentSort.direction === 'asc' ? '▲' : '▼';
-        } else {
-          indicator.textContent = '';
-        }
-      });
-    }
   </script>
 </body>
 

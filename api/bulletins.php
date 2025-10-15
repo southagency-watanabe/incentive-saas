@@ -16,13 +16,21 @@ try {
     case 'GET':
       // 掲示板一覧取得
       $filter = $_GET['filter'] ?? 'all'; // all, pinned, public
+      $is_admin = $_SESSION['role'] === 'admin';
 
-      $where_clause = "tenant_id = :tenant_id AND status = '公開'";
+      // 管理者の場合は全てのステータス、一般ユーザーは公開のみ
+      if ($is_admin) {
+        $where_clause = "tenant_id = :tenant_id";
+      } else {
+        $where_clause = "tenant_id = :tenant_id AND status = '公開'";
+      }
       $params = ['tenant_id' => $tenant_id];
 
-      // 公開期間チェック
-      $where_clause .= " AND (start_datetime IS NULL OR start_datetime <= NOW())";
-      $where_clause .= " AND (end_datetime IS NULL OR end_datetime >= NOW())";
+      // 公開期間チェック（管理者以外）
+      if (!$is_admin) {
+        $where_clause .= " AND (start_datetime IS NULL OR start_datetime <= NOW())";
+        $where_clause .= " AND (end_datetime IS NULL OR end_datetime >= NOW())";
+      }
 
       if ($filter === 'pinned') {
         $where_clause .= " AND pinned = 1";

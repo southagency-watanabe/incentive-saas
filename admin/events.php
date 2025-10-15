@@ -410,8 +410,31 @@ requireAdmin();
       } else if (event.target_type === '全アクション') {
         targetInfo = '全アクション';
       } else if (event.target_type === '特定アクション') {
+        let displays = [];
+        
+        // カテゴリ別倍率を表示
+        if (event.category_multipliers && Object.keys(event.category_multipliers).length > 0) {
+          Object.entries(event.category_multipliers).forEach(([category, multiplier]) => {
+            displays.push(`<span class="text-purple-600">【${escapeHtml(category)}】: <span class="font-bold">${parseFloat(multiplier).toFixed(1)}倍</span></span>`);
+          });
+        }
+        
+        // 個別アクション別倍率を表示
         if (event.target_names && event.target_names.length > 0) {
-          targetInfo = '特定アクション: ' + event.target_names.join('、');
+          const actionIds = event.target_ids ? event.target_ids.split(',') : [];
+          const actionDisplays = event.target_names.map((name, index) => {
+            const actionId = actionIds[index];
+            // アクション別倍率があればそれを使用、なければデフォルト倍率
+            const multiplier = (event.action_multipliers && event.action_multipliers[actionId]) 
+              ? parseFloat(event.action_multipliers[actionId]).toFixed(1)
+              : parseFloat(event.multiplier).toFixed(1);
+            return `${escapeHtml(name)}: <span class="font-bold text-green-600">${multiplier}倍</span>`;
+          });
+          displays = displays.concat(actionDisplays);
+        }
+        
+        if (displays.length > 0) {
+          targetInfo = '<div class="space-y-1">' + displays.join('<br>') + '</div>';
         } else {
           targetInfo = '特定アクション';
         }

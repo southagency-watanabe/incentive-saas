@@ -19,6 +19,7 @@ try {
                 SELECT
                     action_id,
                     action_name,
+                    category,
                     repeat_type,
                     start_date,
                     end_date,
@@ -98,11 +99,11 @@ try {
       // 登録
       $stmt = $pdo->prepare("
                 INSERT INTO actions (
-                    action_id, tenant_id, action_name, repeat_type, start_date, end_date,
+                    action_id, tenant_id, action_name, category, repeat_type, start_date, end_date,
                     days_of_week, day_of_month, target, status,
                     description, point, approval_required
                 ) VALUES (
-                    :action_id, :tenant_id, :action_name, :repeat_type, :start_date, :end_date,
+                    :action_id, :tenant_id, :action_name, :category, :repeat_type, :start_date, :end_date,
                     :days_of_week, :day_of_month, :target, :status,
                     :description, :point, :approval_required
                 )
@@ -112,6 +113,7 @@ try {
         'action_id' => $action_id,
         'tenant_id' => $tenant_id,
         'action_name' => $input['action_name'],
+        'category' => !empty($input['category']) ? $input['category'] : null,
         'repeat_type' => $input['repeat_type'],
         'start_date' => $input['start_date'],
         'end_date' => $input['end_date'],
@@ -184,6 +186,7 @@ try {
       $stmt = $pdo->prepare("
                 UPDATE actions SET
                     action_name = :action_name,
+                    category = :category,
                     repeat_type = :repeat_type,
                     start_date = :start_date,
                     end_date = :end_date,
@@ -199,6 +202,7 @@ try {
 
       $stmt->execute([
         'action_name' => $input['action_name'],
+        'category' => !empty($input['category']) ? $input['category'] : null,
         'repeat_type' => $input['repeat_type'],
         'start_date' => $input['start_date'],
         'end_date' => $input['end_date'],

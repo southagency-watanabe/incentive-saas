@@ -133,18 +133,40 @@ requireAdmin();
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">商品ID</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">商品名</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">大カテゴリ</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">中カテゴリ</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">小カテゴリ</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">付与pt</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">売価</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">原価</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">粗利</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ステータス</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">承認要否</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="product_id" data-type="string">
+              商品ID <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="product_name" data-type="string">
+              商品名 <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="large_category" data-type="string">
+              大カテゴリ <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="medium_category" data-type="string">
+              中カテゴリ <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="small_category" data-type="string">
+              小カテゴリ <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="point" data-type="number">
+              付与pt <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="price" data-type="number">
+              売価 <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="cost" data-type="number">
+              原価 <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="profit" data-type="number">
+              粗利 <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="status" data-type="string">
+              ステータス <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="approval_required" data-type="string">
+              承認要否 <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">操作</th>
           </tr>
         </thead>
         <tbody id="productTableBody" class="bg-white divide-y divide-gray-200">
@@ -277,9 +299,17 @@ requireAdmin();
       }
     }
 
+    // グローバル変数
+    let allProducts = [];
+    let sortConfig = {
+      column: null,
+      direction: 'asc'
+    };
+
     // 初期読み込み
     document.addEventListener('DOMContentLoaded', () => {
       loadProducts();
+      setupSortableHeaders();
     });
 
     // 商品一覧取得
@@ -297,7 +327,8 @@ requireAdmin();
         const result = await response.json();
 
         if (result.success) {
-          renderTable(result.data);
+          allProducts = result.data;
+          renderTable(allProducts);
         } else {
           alert('データの取得に失敗しました。');
         }
@@ -321,25 +352,32 @@ requireAdmin();
       tbody.innerHTML = '';
 
       if (products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
         return;
       }
 
       products.forEach(product => {
-        const category = [
-          product.large_category,
-          product.medium_category,
-          product.small_category
-        ].filter(c => c).join(' > ') || '-';
+        // 粗利計算
+        const price = parseFloat(product.price) || 0;
+        const cost = parseFloat(product.cost) || 0;
+        const profit = price - cost;
+        const profitRate = price > 0 ? (profit / price * 100) : 0;
+        
+        // 粗利の表示（色分け：黒字=緑、赤字=赤）
+        const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-600';
+        const profitDisplay = `<span class="${profitColor} font-semibold">¥${profit.toLocaleString()}</span><br><span class="text-xs text-gray-500">(${profitRate.toFixed(1)}%)</span>`;
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(product.product_id)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(product.product_name)}</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">${escapeHtml(category)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(product.large_category || '-')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(product.medium_category || '-')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(product.small_category || '-')}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(product.point)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${parseFloat(product.price).toLocaleString()}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.cost ? '¥' + parseFloat(product.cost).toLocaleString() : '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${price.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.cost ? '¥' + cost.toLocaleString() : '-'}</td>
+                    <td class="px-6 py-4 text-sm">${profitDisplay}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.status === '有効' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                             ${escapeHtml(product.status)}
@@ -357,6 +395,95 @@ requireAdmin();
                     </td>
                 `;
         tbody.appendChild(tr);
+      });
+    }
+
+    // ソート可能なヘッダーの設定
+    function setupSortableHeaders() {
+      const sortableHeaders = document.querySelectorAll('th[data-sort]');
+      
+      sortableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+          const column = header.getAttribute('data-sort');
+          sortTable(column);
+        });
+      });
+    }
+
+    // テーブルのソート処理
+    function sortTable(column) {
+      // 同じカラムをクリックした場合は方向を反転
+      if (sortConfig.column === column) {
+        sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortConfig.column = column;
+        sortConfig.direction = 'asc';
+      }
+
+      // データ型を取得
+      const header = document.querySelector(`th[data-sort="${column}"]`);
+      const dataType = header ? header.getAttribute('data-type') : 'string';
+
+      // データをソート
+      const sortedProducts = [...allProducts].sort((a, b) => {
+        let aValue, bValue;
+
+        // 粗利は計算値
+        if (column === 'profit') {
+          aValue = (parseFloat(a.price) || 0) - (parseFloat(a.cost) || 0);
+          bValue = (parseFloat(b.price) || 0) - (parseFloat(b.cost) || 0);
+        } else {
+          aValue = a[column];
+          bValue = b[column];
+        }
+
+        // 数値型の場合
+        if (dataType === 'number') {
+          aValue = parseFloat(aValue) || 0;
+          bValue = parseFloat(bValue) || 0;
+          
+          if (sortConfig.direction === 'asc') {
+            return aValue - bValue;
+          } else {
+            return bValue - aValue;
+          }
+        }
+        
+        // 文字列型の場合
+        aValue = String(aValue || '').toLowerCase();
+        bValue = String(bValue || '').toLowerCase();
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+
+      // ソートアイコンを更新
+      updateSortIcons();
+
+      // テーブルを再描画
+      renderTable(sortedProducts);
+    }
+
+    // ソートアイコンの更新
+    function updateSortIcons() {
+      const sortableHeaders = document.querySelectorAll('th[data-sort]');
+      
+      sortableHeaders.forEach(header => {
+        const column = header.getAttribute('data-sort');
+        const icon = header.querySelector('.sort-icon');
+        
+        if (column === sortConfig.column) {
+          icon.textContent = sortConfig.direction === 'asc' ? '↑' : '↓';
+          icon.classList.add('text-blue-600');
+        } else {
+          icon.textContent = '⇅';
+          icon.classList.remove('text-blue-600');
+        }
       });
     }
 

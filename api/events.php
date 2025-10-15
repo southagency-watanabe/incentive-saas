@@ -27,6 +27,7 @@ try {
                     target_type,
                     target_ids,
                     multiplier,
+                    approval_required,
                     status,
                     description,
                     publish_notice,
@@ -47,38 +48,79 @@ try {
         $event['target_names'] = [];
         $event['product_multipliers'] = []; // 商品別倍率
 
-        if ($event['target_type'] === '特定商品' && !empty($event['target_ids'])) {
-          $productIds = explode(',', $event['target_ids']);
-          $placeholders = implode(',', array_fill(0, count($productIds), '?'));
-
+        if ($event['target_type'] === '特定商品') {
+          // 商品カテゴリ別倍率を取得
           $stmt = $pdo->prepare("
-            SELECT product_name FROM products
-            WHERE tenant_id = ? AND product_id IN ($placeholders)
-          ");
-          $stmt->execute(array_merge([$tenant_id], $productIds));
-          $event['target_names'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-          // 商品別倍率を取得
-          $stmt = $pdo->prepare("
-            SELECT product_id, multiplier 
-            FROM event_product_multipliers
+            SELECT category, multiplier 
+            FROM event_product_category_multipliers
             WHERE event_id = ? AND tenant_id = ?
           ");
           $stmt->execute([$event['event_id'], $tenant_id]);
-          $multipliers = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-          $event['product_multipliers'] = $multipliers;
+          $categoryMultipliers = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+          $event['product_category_multipliers'] = $categoryMultipliers;
 
-        } elseif ($event['target_type'] === '特定アクション' && !empty($event['target_ids'])) {
-          $actionIds = explode(',', $event['target_ids']);
-          $placeholders = implode(',', array_fill(0, count($actionIds), '?'));
+          // 個別商品別倍率を取得
+          $event['product_multipliers'] = [];
+          if (!empty($event['target_ids'])) {
+            $productIds = explode(',', $event['target_ids']);
+            $placeholders = implode(',', array_fill(0, count($productIds), '?'));
 
+            $stmt = $pdo->prepare("
+              SELECT product_name FROM products
+              WHERE tenant_id = ? AND product_id IN ($placeholders)
+            ");
+            $stmt->execute(array_merge([$tenant_id], $productIds));
+            $event['target_names'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+            // 商品別倍率を取得
+            $stmt = $pdo->prepare("
+              SELECT product_id, multiplier 
+              FROM event_product_multipliers
+              WHERE event_id = ? AND tenant_id = ?
+            ");
+            $stmt->execute([$event['event_id'], $tenant_id]);
+            $multipliers = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+            $event['product_multipliers'] = $multipliers;
+          }
+
+        } elseif ($event['target_type'] === '特定アクション') {
+          // カテゴリ別倍率を取得
           $stmt = $pdo->prepare("
-            SELECT action_name FROM actions
-            WHERE tenant_id = ? AND action_id IN ($placeholders)
+            SELECT category, multiplier 
+            FROM event_action_category_multipliers
+            WHERE event_id = ? AND tenant_id = ?
           ");
-          $stmt->execute(array_merge([$tenant_id], $actionIds));
-          $event['target_names'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+          $stmt->execute([$event['event_id'], $tenant_id]);
+          $categoryMultipliers = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+          $event['category_multipliers'] = $categoryMultipliers;
+
+          // 個別アクション別倍率を取得
+          $event['action_multipliers'] = [];
+          if (!empty($event['target_ids'])) {
+            $actionIds = explode(',', $event['target_ids']);
+            $placeholders = implode(',', array_fill(0, count($actionIds), '?'));
+
+            $stmt = $pdo->prepare("
+              SELECT action_name FROM actions
+              WHERE tenant_id = ? AND action_id IN ($placeholders)
+            ");
+            $stmt->execute(array_merge([$tenant_id], $actionIds));
+            $event['target_names'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+            // アクション別倍率を取得
+            $stmt = $pdo->prepare("
+              SELECT action_id, multiplier 
+              FROM event_action_multipliers
+              WHERE event_id = ? AND tenant_id = ?
+            ");
+            $stmt->execute([$event['event_id'], $tenant_id]);
+            $multipliers = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+            $event['action_multipliers'] = $multipliers;
+          }
         }
+
+        // approval_requiredを文字列に変換
+        $event['approval_required'] = $event['approval_required'] == 1 ? '必要' : '不要';
       }
 
       echo json_encode([
@@ -184,11 +226,11 @@ try {
                 INSERT INTO events (
                     event_id, tenant_id, event_name, repeat_type, start_date, end_date,
                     days_of_week, day_of_month, target_type, target_ids, multiplier,
-                    status, description, publish_notice, notice_title, notice_body
+                    approval_required, status, description, publish_notice, notice_title, notice_body
                 ) VALUES (
                     :event_id, :tenant_id, :event_name, :repeat_type, :start_date, :end_date,
                     :days_of_week, :day_of_month, :target_type, :target_ids, :multiplier,
-                    :status, :description, :publish_notice, :notice_title, :notice_body
+                    :approval_required, :status, :description, :publish_notice, :notice_title, :notice_body
                 )
             ");
 
@@ -204,6 +246,7 @@ try {
         'target_type' => $input['target_type'],
         'target_ids' => $target_ids,
         'multiplier' => $input['multiplier'],
+        'approval_required' => $input['approval_required'] === '必要' ? 1 : 0,
         'status' => $input['status'],
         'description' => $input['description'] ?? null,
         'publish_notice' => !empty($input['publish_notice']) ? 1 : 0,
@@ -224,6 +267,44 @@ try {
               'event_id' => $event_id,
               'tenant_id' => $tenant_id,
               'product_id' => $product_id,
+              'multiplier' => $multiplier
+            ]);
+          }
+        }
+      }
+
+      // カテゴリ別倍率を保存（特定アクションの場合）
+      if ($input['target_type'] === '特定アクション' && !empty($input['category_multipliers'])) {
+        foreach ($input['category_multipliers'] as $category => $multiplier) {
+          // 数値チェック
+          if (is_numeric($multiplier) && $multiplier > 0) {
+            $stmt = $pdo->prepare("
+              INSERT INTO event_action_category_multipliers (event_id, tenant_id, category, multiplier)
+              VALUES (:event_id, :tenant_id, :category, :multiplier)
+            ");
+            $stmt->execute([
+              'event_id' => $event_id,
+              'tenant_id' => $tenant_id,
+              'category' => $category,
+              'multiplier' => $multiplier
+            ]);
+          }
+        }
+      }
+
+      // アクション別倍率を保存（特定アクションの場合）
+      if ($input['target_type'] === '特定アクション' && !empty($input['action_multipliers'])) {
+        foreach ($input['action_multipliers'] as $action_id => $multiplier) {
+          // 数値チェック
+          if (is_numeric($multiplier) && $multiplier > 0) {
+            $stmt = $pdo->prepare("
+              INSERT INTO event_action_multipliers (event_id, tenant_id, action_id, multiplier)
+              VALUES (:event_id, :tenant_id, :action_id, :multiplier)
+            ");
+            $stmt->execute([
+              'event_id' => $event_id,
+              'tenant_id' => $tenant_id,
+              'action_id' => $action_id,
               'multiplier' => $multiplier
             ]);
           }
@@ -341,6 +422,7 @@ try {
                     target_type = :target_type,
                     target_ids = :target_ids,
                     multiplier = :multiplier,
+                    approval_required = :approval_required,
                     status = :status,
                     description = :description,
                     publish_notice = :publish_notice,
@@ -359,6 +441,7 @@ try {
         'target_type' => $input['target_type'],
         'target_ids' => $target_ids,
         'multiplier' => $input['multiplier'],
+        'approval_required' => $input['approval_required'] === '必要' ? 1 : 0,
         'status' => $input['status'],
         'description' => $input['description'] ?? null,
         'publish_notice' => !empty($input['publish_notice']) ? 1 : 0,
@@ -392,6 +475,66 @@ try {
               'event_id' => $event_id,
               'tenant_id' => $tenant_id,
               'product_id' => $product_id,
+              'multiplier' => $multiplier
+            ]);
+          }
+        }
+      }
+
+      // カテゴリ別倍率を更新（既存削除 + 新規挿入）
+      // まず既存のカテゴリ別倍率を削除
+      $stmt = $pdo->prepare("
+        DELETE FROM event_action_category_multipliers 
+        WHERE event_id = :event_id AND tenant_id = :tenant_id
+      ");
+      $stmt->execute([
+        'event_id' => $event_id,
+        'tenant_id' => $tenant_id
+      ]);
+
+      // 新しいカテゴリ別倍率を保存（特定アクションの場合）
+      if ($input['target_type'] === '特定アクション' && !empty($input['category_multipliers'])) {
+        foreach ($input['category_multipliers'] as $category => $multiplier) {
+          // 数値チェック
+          if (is_numeric($multiplier) && $multiplier > 0) {
+            $stmt = $pdo->prepare("
+              INSERT INTO event_action_category_multipliers (event_id, tenant_id, category, multiplier)
+              VALUES (:event_id, :tenant_id, :category, :multiplier)
+            ");
+            $stmt->execute([
+              'event_id' => $event_id,
+              'tenant_id' => $tenant_id,
+              'category' => $category,
+              'multiplier' => $multiplier
+            ]);
+          }
+        }
+      }
+
+      // アクション別倍率を更新（既存削除 + 新規挿入）
+      // まず既存のアクション別倍率を削除
+      $stmt = $pdo->prepare("
+        DELETE FROM event_action_multipliers 
+        WHERE event_id = :event_id AND tenant_id = :tenant_id
+      ");
+      $stmt->execute([
+        'event_id' => $event_id,
+        'tenant_id' => $tenant_id
+      ]);
+
+      // 新しいアクション別倍率を保存（特定アクションの場合）
+      if ($input['target_type'] === '特定アクション' && !empty($input['action_multipliers'])) {
+        foreach ($input['action_multipliers'] as $action_id => $multiplier) {
+          // 数値チェック
+          if (is_numeric($multiplier) && $multiplier > 0) {
+            $stmt = $pdo->prepare("
+              INSERT INTO event_action_multipliers (event_id, tenant_id, action_id, multiplier)
+              VALUES (:event_id, :tenant_id, :action_id, :multiplier)
+            ");
+            $stmt->execute([
+              'event_id' => $event_id,
+              'tenant_id' => $tenant_id,
+              'action_id' => $action_id,
               'multiplier' => $multiplier
             ]);
           }

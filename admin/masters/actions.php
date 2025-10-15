@@ -133,13 +133,28 @@ requireAdmin();
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">アクションID</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">アクション名</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">対象</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">付与pt</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ステータス</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">承認要否</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="action_id" data-type="string">
+              アクションID <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="action_name" data-type="string">
+              アクション名 <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="category" data-type="string">
+              カテゴリ <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="target" data-type="string">
+              対象 <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="point" data-type="number">
+              付与pt <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="status" data-type="string">
+              ステータス <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="approval_required" data-type="string">
+              承認要否 <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">操作</th>
           </tr>
         </thead>
         <tbody id="actionTableBody" class="bg-white divide-y divide-gray-200">
@@ -164,6 +179,18 @@ requireAdmin();
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">アクション名 <span class="text-red-500">*</span></label>
           <input type="text" id="actionName" name="action_name" required placeholder="例：Google口コミ獲得" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- カテゴリ -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">カテゴリ</label>
+          <select id="category" name="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            <option value="">カテゴリなし</option>
+            <option value="指名・接客">指名・接客</option>
+            <option value="営業活動">営業活動</option>
+            <option value="販促・SNS">販促・SNS</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">※ カテゴリを設定すると、イベント登録時にカテゴリ単位で倍率を設定できます</p>
         </div>
 
         <!-- 繰り返し設定 -->
@@ -313,10 +340,18 @@ requireAdmin();
       }
     }
 
+    // グローバル変数
+    let allActions = [];
+    let sortConfig = {
+      column: null,
+      direction: 'asc'
+    };
+
     // 初期読み込み
     document.addEventListener('DOMContentLoaded', () => {
       loadActions();
       setupRepeatTypeToggle();
+      setupSortableHeaders();
     });
 
     // 繰り返し設定の切り替え
@@ -353,7 +388,8 @@ requireAdmin();
         const result = await response.json();
 
         if (result.success) {
-          renderTable(result.data);
+          allActions = result.data;
+          renderTable(allActions);
         } else {
           alert('データの取得に失敗しました。');
         }
@@ -377,7 +413,7 @@ requireAdmin();
       tbody.innerHTML = '';
 
       if (actions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
         return;
       }
 
@@ -386,6 +422,7 @@ requireAdmin();
         tr.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(action.action_id)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(action.action_name)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${action.category ? escapeHtml(action.category) : '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${action.target === '個人' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">
                             ${escapeHtml(action.target)}
@@ -409,6 +446,70 @@ requireAdmin();
                     </td>
                 `;
         tbody.appendChild(tr);
+      });
+    }
+
+    // ソート可能なヘッダーの設定
+    function setupSortableHeaders() {
+      const sortableHeaders = document.querySelectorAll('th[data-sort]');
+      
+      sortableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+          const column = header.getAttribute('data-sort');
+          sortTable(column);
+        });
+      });
+    }
+
+    // テーブルのソート処理
+    function sortTable(column) {
+      if (sortConfig.column === column) {
+        sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortConfig.column = column;
+        sortConfig.direction = 'asc';
+      }
+
+      const header = document.querySelector(`th[data-sort="${column}"]`);
+      const dataType = header ? header.getAttribute('data-type') : 'string';
+
+      const sortedActions = [...allActions].sort((a, b) => {
+        let aValue = a[column];
+        let bValue = b[column];
+
+        if (dataType === 'number') {
+          aValue = parseFloat(aValue) || 0;
+          bValue = parseFloat(bValue) || 0;
+          return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+        
+        aValue = String(aValue || '').toLowerCase();
+        bValue = String(bValue || '').toLowerCase();
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      updateSortIcons();
+      renderTable(sortedActions);
+    }
+
+    // ソートアイコンの更新
+    function updateSortIcons() {
+      const sortableHeaders = document.querySelectorAll('th[data-sort]');
+      
+      sortableHeaders.forEach(header => {
+        const column = header.getAttribute('data-sort');
+        const icon = header.querySelector('.sort-icon');
+        
+        if (column === sortConfig.column) {
+          icon.textContent = sortConfig.direction === 'asc' ? '↑' : '↓';
+          icon.classList.add('text-blue-600');
+        } else {
+          icon.textContent = '⇅';
+          icon.classList.remove('text-blue-600');
+        }
       });
     }
 
@@ -436,6 +537,7 @@ requireAdmin();
         title.textContent = 'アクション編集';
         document.getElementById('actionId').value = data.action_id;
         document.getElementById('actionName').value = data.action_name;
+        document.getElementById('category').value = data.category || '';
         document.getElementById('repeatType').value = data.repeat_type || '単発';
         // datetime形式をdatetime-local形式に変換（YYYY-MM-DDTHH:MM）
         document.getElementById('startDate').value = data.start_date ? data.start_date.substring(0, 16) : '';

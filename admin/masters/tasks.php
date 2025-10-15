@@ -133,16 +133,35 @@ requireAdmin();
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">タスクID</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">タスク名</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">種別</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">期間</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">繰り返し</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">設定</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">付与pt</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">1日上限</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ステータス</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="task_id" data-type="string">
+              タスクID <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="task_name" data-type="string">
+              タスク名 <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="type" data-type="string">
+              種別 <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="start_datetime" data-type="string">
+              期間 <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="repeat_type" data-type="string">
+              繰り返し <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">設定</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="point" data-type="number">
+              付与pt <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="daily_limit" data-type="number">
+              1日上限 <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="status" data-type="string">
+              ステータス <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap cursor-pointer hover:bg-gray-100" data-sort="approval_required" data-type="string">
+              承認要否 <span class="sort-icon">⇅</span>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">操作</th>
           </tr>
         </thead>
         <tbody id="taskTableBody" class="bg-white divide-y divide-gray-200">
@@ -332,10 +351,18 @@ requireAdmin();
       }
     }
 
+    // グローバル変数
+    let allTasks = [];
+    let sortConfig = {
+      column: null,
+      direction: 'asc'
+    };
+
     // 初期読み込み
     document.addEventListener('DOMContentLoaded', () => {
       loadTasks();
       setupRepeatTypeToggle();
+      setupSortableHeaders();
     });
 
     // 繰り返し設定の切り替え
@@ -375,7 +402,8 @@ requireAdmin();
         const result = await response.json();
 
         if (result.success) {
-          renderTable(result.data);
+          allTasks = result.data;
+          renderTable(allTasks);
         } else {
           alert('データの取得に失敗しました。');
         }
@@ -399,7 +427,7 @@ requireAdmin();
       tbody.innerHTML = '';
 
       if (tasks.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
         return;
       }
 
@@ -438,6 +466,11 @@ requireAdmin();
                             ${escapeHtml(task.status)}
                         </span>
                     </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${task.approval_required === '必要' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}">
+                            ${escapeHtml(task.approval_required)}
+                        </span>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button onclick='openModal("edit", ${JSON.stringify(task).replace(/'/g, "&apos;")})' class="text-blue-600 hover:text-blue-900">編集</button>
                         <button onclick='duplicateTask("${task.task_id}")' class="text-green-600 hover:text-green-900">複製</button>
@@ -445,6 +478,70 @@ requireAdmin();
                     </td>
                 `;
         tbody.appendChild(tr);
+      });
+    }
+
+    // ソート可能なヘッダーの設定
+    function setupSortableHeaders() {
+      const sortableHeaders = document.querySelectorAll('th[data-sort]');
+      
+      sortableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+          const column = header.getAttribute('data-sort');
+          sortTable(column);
+        });
+      });
+    }
+
+    // テーブルのソート処理
+    function sortTable(column) {
+      if (sortConfig.column === column) {
+        sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortConfig.column = column;
+        sortConfig.direction = 'asc';
+      }
+
+      const header = document.querySelector(`th[data-sort="${column}"]`);
+      const dataType = header ? header.getAttribute('data-type') : 'string';
+
+      const sortedTasks = [...allTasks].sort((a, b) => {
+        let aValue = a[column];
+        let bValue = b[column];
+
+        if (dataType === 'number') {
+          aValue = parseFloat(aValue) || 0;
+          bValue = parseFloat(bValue) || 0;
+          return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+        
+        aValue = String(aValue || '').toLowerCase();
+        bValue = String(bValue || '').toLowerCase();
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      updateSortIcons();
+      renderTable(sortedTasks);
+    }
+
+    // ソートアイコンの更新
+    function updateSortIcons() {
+      const sortableHeaders = document.querySelectorAll('th[data-sort]');
+      
+      sortableHeaders.forEach(header => {
+        const column = header.getAttribute('data-sort');
+        const icon = header.querySelector('.sort-icon');
+        
+        if (column === sortConfig.column) {
+          icon.textContent = sortConfig.direction === 'asc' ? '↑' : '↓';
+          icon.classList.add('text-blue-600');
+        } else {
+          icon.textContent = '⇅';
+          icon.classList.remove('text-blue-600');
+        }
       });
     }
 
