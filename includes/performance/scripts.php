@@ -46,6 +46,20 @@
     }
   }
 
+  // 時系列サブメニューの開閉
+  function toggleTimeSeriesMenu() {
+    const submenu = document.getElementById('timeSeriesSubmenu');
+    const arrow = document.getElementById('timeSeriesArrow');
+
+    if (submenu.classList.contains('hidden')) {
+      submenu.classList.remove('hidden');
+      arrow.style.transform = 'rotate(180deg)';
+    } else {
+      submenu.classList.add('hidden');
+      arrow.style.transform = 'rotate(0deg)';
+    }
+  }
+
   // 期間プリセット適用
   function applyPreset() {
     const preset = document.getElementById('periodPreset').value;
@@ -285,19 +299,19 @@
       type: 'line',
       data: {
         labels: trendData.map(d => d.period),
-        datasets: [{
+        datasets: [          {
             label: '売上金額',
             data: trendData.map(d => d.sales),
             borderColor: 'rgb(59, 130, 246)',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            tension: 0.4
+            tension: 0
           },
           {
             label: '粗利益',
             data: trendData.map(d => d.profit),
             borderColor: 'rgb(34, 197, 94)',
             backgroundColor: 'rgba(34, 197, 94, 0.1)',
-            tension: 0.4
+            tension: 0
           }
         ]
       },
@@ -329,6 +343,165 @@
                 }
                 return label;
               }
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return '¥' + value.toLocaleString();
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // 月別売上推移グラフ更新（1～12月固定）
+  function updateMonthlyTrendChart(trendData, year) {
+    if (!document.getElementById('dashTrendChart')) return;
+
+    const ctx = document.getElementById('dashTrendChart').getContext('2d');
+
+    if (dashTrendChart) {
+      dashTrendChart.destroy();
+    }
+
+    // 1～12月のラベルを生成
+    const monthLabels = Array.from({length: 12}, (_, i) => `${i + 1}月`);
+    
+    // データをマッピング（データがない月は0）
+    const salesData = new Array(12).fill(0);
+    const profitData = new Array(12).fill(0);
+    
+    trendData.forEach(d => {
+      if (d.period && d.period.includes('-')) {
+        const parts = d.period.split('-');
+        if (parts.length >= 2) {
+          const month = parseInt(parts[1]) - 1; // 0-indexed
+          if (month >= 0 && month < 12) {
+            salesData[month] = parseFloat(d.sales) || 0;
+            profitData[month] = parseFloat(d.profit) || 0;
+          }
+        }
+      }
+    });
+
+    dashTrendChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: monthLabels,
+        datasets: [
+          {
+            label: '売上金額',
+            data: salesData,
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0,
+            fill: true
+          },
+          {
+            label: '粗利益',
+            data: profitData,
+            borderColor: 'rgb(34, 197, 94)',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            tension: 0,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: `${year}年 月別売上推移`
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: '月'
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return '¥' + value.toLocaleString();
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // 週別売上推移グラフ更新
+  function updateWeeklyTrendChart(trendData) {
+    if (!document.getElementById('dashTrendChart')) return;
+
+    const ctx = document.getElementById('dashTrendChart').getContext('2d');
+
+    if (dashTrendChart) {
+      dashTrendChart.destroy();
+    }
+
+    // 週のラベルを生成（日付範囲または週番号）
+    const labels = trendData.map(d => d.label || d.period);
+    const salesData = trendData.map(d => parseFloat(d.sales) || 0);
+    const profitData = trendData.map(d => parseFloat(d.profit) || 0);
+
+    dashTrendChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: '売上金額',
+            data: salesData,
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0,
+            fill: true
+          },
+          {
+            label: '粗利益',
+            data: profitData,
+            borderColor: 'rgb(34, 197, 94)',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            tension: 0,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: '週別売上推移'
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: '週'
+            },
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45
             }
           },
           y: {
@@ -410,7 +583,7 @@
     currentGraphTab = tab;
 
     // タブボタンのスタイル更新
-    ['ProductSales', 'MemberSales', 'MemberProfit', 'ProductProfit', 'TeamSales'].forEach(t => {
+    ['ProductSales', 'MemberSales', 'MemberProfit', 'ProductProfit', 'TeamSales', 'TeamProfit'].forEach(t => {
       const btn = document.getElementById(`graphTab${t}`);
       if (!btn) return;
       const tabKey = t.charAt(0).toLowerCase() + t.slice(1).replace(/([A-Z])/g, '_$1').toLowerCase();
@@ -470,6 +643,10 @@
         chartLabel = 'チーム別売上';
         valuePrefix = '¥';
         break;
+      case 'team_profit':
+        chartLabel = 'チーム別粗利益';
+        valuePrefix = '¥';
+        break;
     }
 
     salesChart.data.labels = labels;
@@ -518,9 +695,12 @@
 
   let currentDataTab = 'members';
   let membersData = [];
+  let teamsData = [];
   let productsData = [];
-  let currentMembersSortColumn = 'final_points';
+  let currentMembersSortColumn = 'total_sales';
   let currentMembersSortOrder = 'desc';
+  let currentTeamsSortColumn = 'total_sales';
+  let currentTeamsSortOrder = 'desc';
   let currentProductsSortColumn = 'total_sales';
   let currentProductsSortOrder = 'desc';
 
@@ -529,7 +709,7 @@
     currentDataTab = tab;
 
     // タブボタンのスタイル更新
-    ['Members', 'Products'].forEach(t => {
+    ['Members', 'Teams', 'Products'].forEach(t => {
       const btn = document.getElementById(`tab${t}`);
       if (!btn) return;
       const isActive = t.toLowerCase() === tab;
@@ -541,8 +721,10 @@
 
     // コンテンツ表示切り替え
     const membersTab = document.getElementById('membersTab');
+    const teamsTab = document.getElementById('teamsTab');
     const productsTab = document.getElementById('productsTab');
     if (membersTab) membersTab.classList.toggle('hidden', tab !== 'members');
+    if (teamsTab) teamsTab.classList.toggle('hidden', tab !== 'teams');
     if (productsTab) productsTab.classList.toggle('hidden', tab !== 'products');
   }
 
@@ -568,7 +750,7 @@
           break;
         case 'sales_count':
         case 'total_sales':
-        case 'final_points':
+        case 'total_profit':
           aVal = parseFloat(a[column]) || 0;
           bVal = parseFloat(b[column]) || 0;
           break;
@@ -610,7 +792,6 @@
         case 'total_quantity':
         case 'total_sales':
         case 'total_profit':
-        case 'total_points':
         case 'avg_price':
           aVal = parseFloat(a[column]) || 0;
           bVal = parseFloat(b[column]) || 0;
@@ -638,7 +819,7 @@
       'team_name': 'sortIndicatorTeamName',
       'sales_count': 'sortIndicatorSalesCount',
       'total_sales': 'sortIndicatorTotalSales',
-      'final_points': 'sortIndicatorFinalPoints'
+      'total_profit': 'sortIndicatorTotalProfit'
     };
 
     Object.entries(indicators).forEach(([column, indicatorId]) => {
@@ -660,7 +841,6 @@
       'total_quantity': 'sortIndicatorTotalQuantity',
       'total_sales': 'sortIndicatorProductTotalSales',
       'total_profit': 'sortIndicatorTotalProfit',
-      'total_points': 'sortIndicatorTotalPoints',
       'avg_price': 'sortIndicatorAvgPrice'
     };
 
@@ -695,7 +875,7 @@
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(member.team_name || '-')}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${member.sales_count}件</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${parseFloat(member.total_sales).toLocaleString()}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">${member.final_points}pt</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">¥${parseFloat(member.total_profit || 0).toLocaleString()}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -709,7 +889,7 @@
     tbody.innerHTML = '';
 
     if (productsData.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
       return;
     }
 
@@ -717,11 +897,96 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(product.product_name)}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${parseFloat(product.avg_price).toLocaleString()}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${product.total_quantity}個</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${parseFloat(product.total_sales).toLocaleString()}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">¥${parseFloat(product.total_profit || 0).toLocaleString()}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600">${product.total_points}pt</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${parseFloat(product.avg_price).toLocaleString()}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // チーム別実績テーブルソート
+  function sortTeamsTable(column) {
+    // 同じカラムをクリックした場合は昇順/降順を切り替え
+    if (currentTeamsSortColumn === column) {
+      currentTeamsSortOrder = currentTeamsSortOrder === 'desc' ? 'asc' : 'desc';
+    } else {
+      currentTeamsSortColumn = column;
+      currentTeamsSortOrder = 'desc'; // 新しいカラムは降順から開始
+    }
+
+    // データをソート
+    teamsData.sort((a, b) => {
+      let aVal, bVal;
+      
+      switch(column) {
+        case 'team_name':
+          aVal = (a[column] || '').toString();
+          bVal = (b[column] || '').toString();
+          break;
+        case 'sales_count':
+        case 'total_sales':
+        case 'total_profit':
+          aVal = parseFloat(a[column]) || 0;
+          bVal = parseFloat(b[column]) || 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (currentTeamsSortOrder === 'desc') {
+        return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+      } else {
+        return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+      }
+    });
+
+    // テーブル再描画
+    renderTeamsTableFromCache();
+    updateTeamsSortIndicators();
+  }
+
+  // ソートインジケーター更新（チーム）
+  function updateTeamsSortIndicators() {
+    const indicators = {
+      'team_name': 'sortIndicatorTeamNameTable',
+      'sales_count': 'sortIndicatorTeamSalesCount',
+      'total_sales': 'sortIndicatorTeamTotalSales',
+      'total_profit': 'sortIndicatorTeamTotalProfit'
+    };
+
+    Object.entries(indicators).forEach(([column, indicatorId]) => {
+      const indicator = document.getElementById(indicatorId);
+      if (!indicator) return;
+      
+      if (column === currentTeamsSortColumn) {
+        indicator.textContent = currentTeamsSortOrder === 'desc' ? '▼' : '▲';
+      } else {
+        indicator.textContent = '';
+      }
+    });
+  }
+
+  // チーム別実績テーブル描画（キャッシュから）
+  function renderTeamsTableFromCache() {
+    const tbody = document.getElementById('teamsTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (teamsData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+      return;
+    }
+
+    teamsData.forEach(team => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(team.team_name)}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${team.sales_count}件</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${parseFloat(team.total_sales).toLocaleString()}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">¥${parseFloat(team.total_profit || 0).toLocaleString()}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -731,7 +996,7 @@
   function renderMembersTable(members) {
     membersData = members || [];
     // デフォルトソートを適用
-    currentMembersSortColumn = 'final_points';
+    currentMembersSortColumn = 'total_sales';
     currentMembersSortOrder = 'desc';
     sortMembersTable(currentMembersSortColumn);
   }
@@ -743,6 +1008,15 @@
     currentProductsSortColumn = 'total_sales';
     currentProductsSortOrder = 'desc';
     sortProductsTable(currentProductsSortColumn);
+  }
+
+  // チーム別実績テーブル描画（外部から呼ばれる）
+  function renderTeamsTable(teams) {
+    teamsData = teams || [];
+    // デフォルトソートを適用
+    currentTeamsSortColumn = 'total_sales';
+    currentTeamsSortOrder = 'desc';
+    sortTeamsTable(currentTeamsSortColumn);
   }
 
   // ページ読み込み時の初期化

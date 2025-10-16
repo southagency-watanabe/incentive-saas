@@ -83,9 +83,33 @@ requireAdmin();
         </div>
       </div>
 
-      <a href="/admin/performance.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>実績管理</span>
-      </a>
+      <!-- 実績管理ドロップダウン -->
+      <div>
+        <button onclick="togglePerformanceMenu()" class="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
+          <span>実績管理</span>
+          <svg id="performanceArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="performanceSubmenu" class="hidden bg-gray-50">
+          <div>
+            <button onclick="toggleTimeSeriesMenu()" class="w-full flex items-center justify-between px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+              <span>時系列</span>
+              <svg id="timeSeriesArrow" class="w-3 h-3 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            <div id="timeSeriesSubmenu" class="hidden bg-gray-100">
+              <a href="/admin/performance/monthly.php" class="flex items-center px-6 py-2 pl-20 text-sm text-gray-700 hover:bg-gray-200"><span>月別</span></a>
+              <a href="/admin/performance/weekly.php" class="flex items-center px-6 py-2 pl-20 text-sm text-gray-700 hover:bg-gray-200"><span>週別</span></a>
+              <a href="/admin/performance/daily.php" class="flex items-center px-6 py-2 pl-20 text-sm text-gray-700 hover:bg-gray-200"><span>日別</span></a>
+              <a href="/admin/performance/dayofweek.php" class="flex items-center px-6 py-2 pl-20 text-sm text-gray-700 hover:bg-gray-200"><span>曜日別</span></a>
+            </div>
+          </div>
+          <a href="/admin/performance/product.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200"><span>商品別</span></a>
+          <a href="/admin/performance/member_team.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200"><span>メンバー別/チーム別</span></a>
+        </div>
+      </div>
       <a href="/admin/events.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
         <span>イベント</span>
       </a>
@@ -342,6 +366,30 @@ requireAdmin();
       const submenu = document.getElementById('approvalSubmenu');
       const arrow = document.getElementById('approvalArrow');
 
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    function togglePerformanceMenu() {
+      const submenu = document.getElementById('performanceSubmenu');
+      const arrow = document.getElementById('performanceArrow');
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    function toggleTimeSeriesMenu() {
+      const submenu = document.getElementById('timeSeriesSubmenu');
+      const arrow = document.getElementById('timeSeriesArrow');
       if (submenu.classList.contains('hidden')) {
         submenu.classList.remove('hidden');
         arrow.style.transform = 'rotate(180deg)';

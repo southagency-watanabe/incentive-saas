@@ -4,8 +4,8 @@ require_once '../../config/database.php';
 requireLogin();
 
 $page_title = '日別実績管理';
-$active_page = 'daily';
-$default_period = 'today'; // デフォルト期間
+$active_page = 'timeseries_daily';
+$default_period = 'this_week'; // デフォルト期間
 
 // メンバー・チーム・商品一覧取得（フィルタ用）
 $pdo = getDB();
@@ -64,7 +64,7 @@ $products = $stmt->fetchAll();
                     <option value="this_month" <?= $default_period === 'this_month' ? 'selected' : '' ?>>今月</option>
                     <option value="last_month">先月</option>
                     <option value="this_quarter">今四半期</option>
-                    <option value="this_year">今年</option>
+                    <option value="this_year" <?= $default_period === 'this_year' ? 'selected' : '' ?>>今年</option>
                   </select>
                   <button onclick="applyDashFilters()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
                     適用
@@ -152,10 +152,6 @@ $products = $stmt->fetchAll();
                     粗利
                     <span id="sortIndicatorDailyTotalProfit" class="ml-1"></span>
                   </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortDailyTable('total_points')">
-                    付与ポイント
-                    <span id="sortIndicatorDailyTotalPoints" class="ml-1"></span>
-                  </th>
                 </tr>
               </thead>
               <tbody id="dailySalesTableBody" class="bg-white divide-y divide-gray-200">
@@ -173,10 +169,6 @@ $products = $stmt->fetchAll();
             </div>
           </div>
         </div>
-
-        <?php include '../../includes/performance/summary.php'; ?>
-        <?php include '../../includes/performance/graph_section.php'; ?>
-        <?php include '../../includes/performance/data_tables.php'; ?>
       </div>
     </main>
   </div>
@@ -244,12 +236,13 @@ $products = $stmt->fetchAll();
       // メンバーフィルタ
       const memberFilters = document.getElementById('dashMemberFilters');
       memberFilters.innerHTML = '';
+      console.log('👥 メンバーフィルタ生成:', members);
       members.forEach(member => {
         const label = document.createElement('label');
         label.className = 'flex items-center space-x-2 mb-1';
         label.innerHTML = `
           <input type="checkbox" name="dash_member_ids[]" value="${escapeHtml(member.member_id)}" class="rounded">
-          <span class="text-sm">${escapeHtml(member.name)}</span>
+          <span class="text-sm">${escapeHtml(member.name)} (ID: ${escapeHtml(member.member_id)})</span>
         `;
         memberFilters.appendChild(label);
       });
@@ -298,6 +291,14 @@ $products = $stmt->fetchAll();
     }
 
     // ダッシュボードプリセット適用
+    // 日付をローカルタイムゾーンでYYYY-MM-DD形式にフォーマット
+    function formatDateLocal(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
     function applyDashPreset() {
       const preset = document.getElementById('dashPeriodPreset').value;
       const today = new Date();
@@ -305,31 +306,31 @@ $products = $stmt->fetchAll();
 
       switch (preset) {
         case 'today':
-          startDate = endDate = today.toISOString().split('T')[0];
+          startDate = endDate = formatDateLocal(today);
           break;
         case 'this_week':
           const dayOfWeek = today.getDay();
           const monday = new Date(today);
           monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-          startDate = monday.toISOString().split('T')[0];
-          endDate = today.toISOString().split('T')[0];
+          startDate = formatDateLocal(monday);
+          endDate = formatDateLocal(today);
           break;
         case 'this_month':
-          startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-          endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+          startDate = formatDateLocal(new Date(today.getFullYear(), today.getMonth(), 1));
+          endDate = formatDateLocal(new Date(today.getFullYear(), today.getMonth() + 1, 0));
           break;
         case 'last_month':
-          startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString().split('T')[0];
-          endDate = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().split('T')[0];
+          startDate = formatDateLocal(new Date(today.getFullYear(), today.getMonth() - 1, 1));
+          endDate = formatDateLocal(new Date(today.getFullYear(), today.getMonth(), 0));
           break;
         case 'this_quarter':
           const quarter = Math.floor(today.getMonth() / 3);
-          startDate = new Date(today.getFullYear(), quarter * 3, 1).toISOString().split('T')[0];
-          endDate = new Date(today.getFullYear(), (quarter + 1) * 3, 0).toISOString().split('T')[0];
+          startDate = formatDateLocal(new Date(today.getFullYear(), quarter * 3, 1));
+          endDate = formatDateLocal(new Date(today.getFullYear(), (quarter + 1) * 3, 0));
           break;
         case 'this_year':
-          startDate = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
-          endDate = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
+          startDate = formatDateLocal(new Date(today.getFullYear(), 0, 1));
+          endDate = formatDateLocal(new Date(today.getFullYear(), 11, 31));
           break;
         default:
           return;
@@ -341,7 +342,7 @@ $products = $stmt->fetchAll();
 
     // ダッシュボードフィルタリセット
     function resetDashFilters() {
-      document.getElementById('dashPeriodPreset').value = 'today';
+      document.getElementById('dashPeriodPreset').value = 'this_week';
       applyDashPreset();
       document.getElementById('dashSearchText').value = '';
       document.querySelectorAll('input[name^="dash_"][type="checkbox"]').forEach(cb => cb.checked = false);
@@ -366,9 +367,6 @@ $products = $stmt->fetchAll();
         
         console.log('日付フィルタ設定:', { startDate, endDate });
 
-        // 期間に基づいて自動的にグラフ表示単位を計算
-        const granularity = calculateDashGranularity(startDate, endDate);
-
         const memberIds = Array.from(document.querySelectorAll('input[name="dash_member_ids[]"]:checked'))
           .map(cb => cb.value).join(',');
         const teamIds = Array.from(document.querySelectorAll('input[name="dash_team_ids[]"]:checked'))
@@ -376,11 +374,12 @@ $products = $stmt->fetchAll();
         const productIds = Array.from(document.querySelectorAll('input[name="dash_product_ids[]"]:checked'))
           .map(cb => cb.value).join(',');
 
+        // 日別表示は常にdaily granularity
         const params = new URLSearchParams({
           start_date: startDate,
           end_date: endDate,
           search_text: searchText,
-          granularity: granularity
+          granularity: 'daily'
         });
 
         if (memberIds) params.append('member_ids', memberIds);
@@ -419,6 +418,13 @@ $products = $stmt->fetchAll();
           .map(cb => cb.value).join(',');
         const searchText = document.getElementById('dashSearchText')?.value || '';
         
+        console.log('🔍 詳細フィルタパラメータ:', {
+          memberIds: memberIds || '(なし)',
+          teamIds: teamIds || '(なし)',
+          productIds: productIds || '(なし)',
+          searchText: searchText || '(なし)'
+        });
+        
         const params = new URLSearchParams({
           period: 'custom',
           start_date: startDate,
@@ -441,26 +447,6 @@ $products = $stmt->fetchAll();
         console.log('実績管理データ取得結果:', result);
 
         if (result.success) {
-          // サマリーカード更新
-          updateSummary(result.summary);
-          
-          // メンバー別実績テーブル更新（日付フィルタ適用済み）
-          console.log('メンバー別実績データ件数:', result.members?.length || 0);
-          renderMembersTable(result.members);
-          
-          // 商品別実績テーブル更新（日付フィルタ適用済み）
-          console.log('商品別実績データ件数:', result.products?.length || 0);
-          renderProductsTable(result.products);
-          
-          // グラフデータ更新
-          cachedGraphData = result.graphs;
-          
-          // メンバーが選択されているかチェック
-          const hasMemberFilter = memberIds && memberIds.length > 0;
-          updateGraphTabsVisibility(hasMemberFilter);
-          
-          updateChartByTab(currentGraphTab);
-          
           // 日毎の売上テーブル更新
           dailySalesData = result.daily_sales || [];
           console.log('日毎の売上データ件数:', dailySalesData.length);
@@ -478,7 +464,6 @@ $products = $stmt->fetchAll();
           console.log('実績管理データの更新が完了しました');
         } else {
           console.error('実績管理データの取得に失敗しました:', result.message);
-          alert('実績管理データの取得に失敗しました: ' + (result.message || '不明なエラー'));
         }
       } catch (error) {
         console.error('Error in loadPerformanceData:', error);
@@ -492,7 +477,7 @@ $products = $stmt->fetchAll();
       tbody.innerHTML = '';
 
       if (dailySalesData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
         document.getElementById('dailyPagination').style.display = 'none';
         return;
       }
@@ -513,7 +498,6 @@ $products = $stmt->fetchAll();
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${daily.sales_count}件</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${parseFloat(daily.total_sales).toLocaleString()}</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">¥${parseFloat(daily.total_profit || 0).toLocaleString()}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600">${daily.total_points}pt</td>
         `;
         tbody.appendChild(tr);
       });
@@ -628,10 +612,6 @@ $products = $stmt->fetchAll();
             aVal = parseFloat(a.total_profit) || 0;
             bVal = parseFloat(b.total_profit) || 0;
             break;
-          case 'total_points':
-            aVal = parseInt(a.total_points) || 0;
-            bVal = parseInt(b.total_points) || 0;
-            break;
           default:
             return 0;
         }
@@ -658,8 +638,7 @@ $products = $stmt->fetchAll();
         'date': 'sortIndicatorDailyDate',
         'sales_count': 'sortIndicatorDailySalesCount',
         'total_sales': 'sortIndicatorDailyTotalSales',
-        'total_profit': 'sortIndicatorDailyTotalProfit',
-        'total_points': 'sortIndicatorDailyTotalPoints'
+        'total_profit': 'sortIndicatorDailyTotalProfit'
       };
 
       Object.entries(indicators).forEach(([column, indicatorId]) => {
@@ -672,37 +651,6 @@ $products = $stmt->fetchAll();
           indicator.textContent = '';
         }
       });
-    }
-
-    // グラフタブの表示/非表示を切り替え
-    function updateGraphTabsVisibility(hasMemberFilter) {
-      const memberSalesBtn = document.getElementById('graphTabMemberSales');
-      const memberProfitBtn = document.getElementById('graphTabMemberProfit');
-      const teamSalesBtn = document.getElementById('graphTabTeamSales');
-      
-      if (hasMemberFilter) {
-        // メンバーフィルタが適用されている場合は、商品別のみ表示
-        console.log('メンバーフィルタが適用されているため、商品別グラフのみ表示');
-        
-        if (memberSalesBtn) memberSalesBtn.style.display = 'none';
-        if (memberProfitBtn) memberProfitBtn.style.display = 'none';
-        if (teamSalesBtn) teamSalesBtn.style.display = 'none';
-        
-        // 現在のタブがメンバー別やチーム別の場合は、商品別売上に切り替え
-        if (currentGraphTab === 'member_sales' || 
-            currentGraphTab === 'member_profit' || 
-            currentGraphTab === 'team_sales') {
-          console.log('現在のタブを商品別売上に切り替え');
-          switchGraphTab('product_sales');
-        }
-      } else {
-        // メンバーフィルタが適用されていない場合は、全て表示
-        console.log('メンバーフィルタなし、全てのグラフタブを表示');
-        
-        if (memberSalesBtn) memberSalesBtn.style.display = '';
-        if (memberProfitBtn) memberProfitBtn.style.display = '';
-        if (teamSalesBtn) teamSalesBtn.style.display = '';
-      }
     }
 
   </script>

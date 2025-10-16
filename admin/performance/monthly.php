@@ -1,8 +1,26 @@
 <?php
 require_once '../../includes/session.php';
+require_once '../../config/database.php';
 requireLogin();
 
 $page_title = '月別実績管理';
+$active_page = 'timeseries_monthly';
+$default_period = 'this_year'; // デフォルト期間
+
+// メンバー・チーム・商品一覧取得（フィルタ用）
+$pdo = getDB();
+
+$stmt = $pdo->prepare("SELECT member_id, name FROM members WHERE tenant_id = :tenant_id AND status = '有効' ORDER BY member_id ASC");
+$stmt->execute(['tenant_id' => $_SESSION['tenant_id']]);
+$members = $stmt->fetchAll();
+
+$stmt = $pdo->prepare("SELECT team_id, team_name FROM teams WHERE tenant_id = :tenant_id ORDER BY team_id ASC");
+$stmt->execute(['tenant_id' => $_SESSION['tenant_id']]);
+$teams = $stmt->fetchAll();
+
+$stmt = $pdo->prepare("SELECT product_id, product_name FROM products WHERE tenant_id = :tenant_id AND status = '有効' ORDER BY product_id ASC");
+$stmt->execute(['tenant_id' => $_SESSION['tenant_id']]);
+$products = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="ja">
@@ -11,119 +29,14 @@ $page_title = '月別実績管理';
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= $page_title ?> - インセンティブSaaS</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body class="bg-gray-50">
   <div class="flex h-screen">
-    <!-- サイドバー -->
-    <aside class="w-64 bg-white shadow-lg h-screen sticky top-0 flex flex-col">
-      <!-- ロゴ・ヘッダー部分 -->
-      <div class="p-6 border-b">
-        <h1 class="text-xl font-bold text-gray-800">インセンティブSaaS</h1>
-      </div>
-
-      <!-- ナビゲーション -->
-      <nav class="flex-1 overflow-y-auto py-4">
-        <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-          <span>ランキングサマリー</span>
-        </a>
-        
-        <!-- マスタ管理ドロップダウン -->
-        <div>
-          <button onclick="toggleMasterMenu()" class="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-            <span>マスタ管理</span>
-            <svg id="masterArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-          </button>
-          <div id="masterSubmenu" class="hidden bg-gray-50">
-            <a href="/admin/masters/members.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
-              <span>メンバー</span>
-            </a>
-            <a href="/admin/masters/teams.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
-              <span>チーム</span>
-            </a>
-            <a href="/admin/masters/products.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
-              <span>商品</span>
-            </a>
-            <a href="/admin/masters/actions.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
-              <span>アクション</span>
-            </a>
-            <a href="/admin/masters/tasks.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
-              <span>タスク</span>
-            </a>
-            <a href="/admin/masters/events.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
-              <span>イベント</span>
-            </a>
-          </div>
-        </div>
-        
-        <a href="/admin/sales/input.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-          <span>売上管理</span>
-        </a>
-
-        <!-- 承認管理ドロップダウン -->
-        <div>
-          <button onclick="toggleApprovalMenu()" class="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-            <span>承認管理</span>
-            <svg id="approvalArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-          </button>
-          <div id="approvalSubmenu" class="hidden bg-gray-50">
-            <a href="/admin/approvals.php?tab=sales" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
-              <span>売上承認</span>
-            </a>
-            <a href="/admin/approvals.php?tab=actions" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
-              <span>アクション承認</span>
-            </a>
-            <a href="/admin/approvals.php?tab=tasks" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
-              <span>タスク承認</span>
-            </a>
-          </div>
-        </div>
-
-        <!-- 実績管理ドロップダウン -->
-        <div>
-          <button onclick="togglePerformanceMenu()" class="w-full flex items-center justify-between px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
-            <span class="font-medium">実績管理</span>
-            <svg id="performanceArrow" class="w-4 h-4 transition-transform duration-200 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-          </button>
-          <div id="performanceSubmenu" class="bg-gray-50">
-            <a href="/admin/performance/daily.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
-              <span>日別</span>
-            </a>
-            <a href="/admin/performance/weekly.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
-              <span>週別</span>
-            </a>
-            <a href="/admin/performance/monthly.php" class="flex items-center px-6 py-2 pl-12 text-sm text-blue-600 bg-blue-100">
-              <span>月別</span>
-            </a>
-            <a href="/admin/performance/dayofweek.php" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
-              <span>曜日別</span>
-            </a>
-          </div>
-        </div>
-
-        <a href="/admin/events.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-          <span>イベント</span>
-        </a>
-        <a href="/admin/notices.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-          <span>お知らせ</span>
-        </a>
-      </nav>
-
-      <!-- ユーザー情報・ログアウト -->
-      <div class="border-t p-4">
-        <div class="flex items-center justify-between">
-          <span class="text-sm text-gray-700"><?= htmlspecialchars($_SESSION['name']) ?> さん</span>
-          <a href="/api/logout.php" class="text-sm text-red-600 hover:text-red-700 font-medium">ログアウト</a>
-        </div>
-      </div>
-    </aside>
+    <?php include '../../includes/performance/sidebar.php'; ?>
 
     <main class="flex-1 overflow-y-auto">
+      <!-- ページヘッダー -->
       <header class="bg-white shadow-sm border-b">
         <div class="px-8 py-6">
           <h2 class="text-2xl font-bold text-gray-800"><?= $page_title ?></h2>
@@ -131,55 +44,555 @@ $page_title = '月別実績管理';
       </header>
 
       <div class="p-8">
-        <div class="bg-white rounded-lg shadow p-6">
-          <p class="text-gray-600">月別実績管理の内容がここに表示されます。</p>
+        <!-- ダッシュボード機能エリア -->
+        
+        <!-- フィルタエリア（詳細フィルタ付き） -->
+        <div class="bg-white rounded-lg shadow mb-6">
+          <!-- フィルタヘッダー（常に表示） -->
+          <div class="p-6 pb-3">
+            <div class="flex-1">
+              <!-- 期間フィルタ（常に表示） -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">期間</label>
+                <div class="flex gap-2 items-center flex-wrap">
+                  <input type="date" id="dashStartDate" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                  <span>〜</span>
+                  <input type="date" id="dashEndDate" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                  <select id="dashPeriodPreset" onchange="applyDashPreset()" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="today" <?= $default_period === 'today' ? 'selected' : '' ?>>今日</option>
+                    <option value="this_week" <?= $default_period === 'this_week' ? 'selected' : '' ?>>今週</option>
+                    <option value="this_month" <?= $default_period === 'this_month' ? 'selected' : '' ?>>今月</option>
+                    <option value="last_month">先月</option>
+                    <option value="this_quarter">今四半期</option>
+                    <option value="this_year" <?= $default_period === 'this_year' ? 'selected' : '' ?>>今年</option>
+                  </select>
+                  <button onclick="applyDashFilters()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                    適用
+                  </button>
+                  <button onclick="resetDashFilters()" class="bg-gray-200 text-gray-700 px-6 py-2 rounded hover:bg-gray-300">
+                    リセット
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 詳細フィルタ展開ボタン -->
+          <div class="flex justify-center pb-3">
+            <button onclick="toggleDashFilterDetails()" class="text-gray-400 hover:text-gray-600 transition-colors">
+              <svg id="dashFilterArrow" class="w-6 h-6 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- フィルタ詳細（開閉可能） -->
+          <div id="dashFilterDetails" class="hidden">
+            <div class="p-6 pt-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- テキスト検索 -->
+                <div class="col-span-full">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">テキスト検索</label>
+                  <input type="text" id="dashSearchText" placeholder="商品名、メンバー名で検索..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- メンバーフィルタ -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">メンバー</label>
+                  <div id="dashMemberFilters" class="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto bg-white">
+                    <!-- JavaScriptで動的に挿入 -->
+                  </div>
+                </div>
+
+                <!-- チームフィルタ -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">チーム</label>
+                  <div id="dashTeamFilters" class="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto bg-white">
+                    <!-- JavaScriptで動的に挿入 -->
+                  </div>
+                </div>
+
+                <!-- 商品フィルタ -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">商品</label>
+                  <div id="dashProductFilters" class="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto bg-white">
+                    <!-- JavaScriptで動的に挿入 -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <?php include '../../includes/performance/dashboard_scorecards.php'; ?>
+        <?php include '../../includes/performance/trend_chart.php'; ?>
+
+        <!-- 月ごとの売上テーブル -->
+        <div class="bg-white rounded-lg shadow mb-6">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">月ごとの売上</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortMonthlyTable('month')">
+                    月
+                    <span id="sortIndicatorMonthlyMonth" class="ml-1">▼</span>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortMonthlyTable('sales_count')">
+                    売上件数
+                    <span id="sortIndicatorMonthlySalesCount" class="ml-1"></span>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortMonthlyTable('total_sales')">
+                    売上金額
+                    <span id="sortIndicatorMonthlyTotalSales" class="ml-1"></span>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortMonthlyTable('total_profit')">
+                    粗利
+                    <span id="sortIndicatorMonthlyTotalProfit" class="ml-1"></span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="monthlySalesTableBody" class="bg-white divide-y divide-gray-200">
+                <!-- データはJavaScriptで挿入 -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </main>
   </div>
 
+  <?php include '../../includes/performance/scripts.php'; ?>
+
   <script>
-    // マスタ管理ドロップダウンの開閉
-    function toggleMasterMenu() {
-      const submenu = document.getElementById('masterSubmenu');
-      const arrow = document.getElementById('masterArrow');
+    // フィルタデータをグローバル変数として定義
+    const members = <?= json_encode($members) ?>;
+    const teams = <?= json_encode($teams) ?>;
+    const products = <?= json_encode($products) ?>;
 
-      if (submenu.classList.contains('hidden')) {
-        submenu.classList.remove('hidden');
+    // ページ固有の変数
+    let monthlySalesData = [];
+    let monthlySortColumn = 'month';
+    let monthlySortOrder = 'desc';
+    let dashFilterDetailsOpen = false;
+
+    // 共通スクリプトより先に変数を定義
+    let isPageInitialized = false;
+
+    // 共通スクリプトで使用される関数をオーバーライド
+    // loadData: データ読み込み（承認フィルタ切り替え時に呼ばれる）
+    window.loadData = async function() {
+      const startDate = document.getElementById('dashStartDate').value;
+      const endDate = document.getElementById('dashEndDate').value;
+      
+      if (startDate && endDate && isPageInitialized) {
+        console.log('承認フィルタ変更によるデータ再取得:', { startDate, endDate });
+        await loadPerformanceData(startDate, endDate);
+      } else {
+        console.log('日付が設定されていないか、ページ初期化中のため、データ取得をスキップ');
+      }
+    };
+
+    // applyPreset: 共通スクリプトの初期化で呼ばれるが、このページでは使わない
+    window.applyPreset = function() {
+      // daily.phpではapplyDashPreset()を使うため、何もしない
+      console.log('applyPreset: スキップ（applyDashPresetを使用）');
+    };
+
+    // loadFilterOptions: 共通スクリプトの初期化で呼ばれるが、このページでは独自実装
+    window.loadFilterOptions = function() {
+      // daily.phpではloadDashboardFilters()を使うため、何もしない
+      console.log('loadFilterOptions: スキップ（loadDashboardFiltersを使用）');
+    };
+
+    // ダッシュボードフィルタの初期化
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('ページ初期化開始');
+      loadDashboardFilters();
+      applyDashPreset();
+      // ページ初期化完了フラグを立ててから、初回データ取得
+      setTimeout(() => {
+        isPageInitialized = true;
+        console.log('ページ初期化完了、データ取得開始');
+        applyDashFilters();
+      }, 100);
+    });
+
+    // ダッシュボードフィルタ選択肢の読み込み
+    function loadDashboardFilters() {
+      // メンバーフィルタ
+      const memberFilters = document.getElementById('dashMemberFilters');
+      memberFilters.innerHTML = '';
+      console.log('👥 メンバーフィルタ生成:', members);
+      members.forEach(member => {
+        const label = document.createElement('label');
+        label.className = 'flex items-center space-x-2 mb-1';
+        label.innerHTML = `
+          <input type="checkbox" name="dash_member_ids[]" value="${escapeHtml(member.member_id)}" class="rounded">
+          <span class="text-sm">${escapeHtml(member.name)} (ID: ${escapeHtml(member.member_id)})</span>
+        `;
+        memberFilters.appendChild(label);
+      });
+
+      // チームフィルタ
+      const teamFilters = document.getElementById('dashTeamFilters');
+      teamFilters.innerHTML = '';
+      teams.forEach(team => {
+        const label = document.createElement('label');
+        label.className = 'flex items-center space-x-2 mb-1';
+        label.innerHTML = `
+          <input type="checkbox" name="dash_team_ids[]" value="${escapeHtml(team.team_id)}" class="rounded">
+          <span class="text-sm">${escapeHtml(team.team_name)}</span>
+        `;
+        teamFilters.appendChild(label);
+      });
+
+      // 商品フィルタ
+      const productFilters = document.getElementById('dashProductFilters');
+      productFilters.innerHTML = '';
+      products.forEach(product => {
+        const label = document.createElement('label');
+        label.className = 'flex items-center space-x-2 mb-1';
+        label.innerHTML = `
+          <input type="checkbox" name="dash_product_ids[]" value="${escapeHtml(product.product_id)}" class="rounded">
+          <span class="text-sm">${escapeHtml(product.product_name)}</span>
+        `;
+        productFilters.appendChild(label);
+      });
+    }
+
+    // ダッシュボードフィルタ詳細の開閉
+    function toggleDashFilterDetails() {
+      const details = document.getElementById('dashFilterDetails');
+      const arrow = document.getElementById('dashFilterArrow');
+
+      dashFilterDetailsOpen = !dashFilterDetailsOpen;
+
+      if (dashFilterDetailsOpen) {
+        details.classList.remove('hidden');
         arrow.style.transform = 'rotate(180deg)';
       } else {
-        submenu.classList.add('hidden');
+        details.classList.add('hidden');
         arrow.style.transform = 'rotate(0deg)';
       }
     }
 
-    // 承認管理ドロップダウンの開閉
-    function toggleApprovalMenu() {
-      const submenu = document.getElementById('approvalSubmenu');
-      const arrow = document.getElementById('approvalArrow');
+    // ダッシュボードプリセット適用
+    // 日付をローカルタイムゾーンでYYYY-MM-DD形式にフォーマット
+    function formatDateLocal(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
 
-      if (submenu.classList.contains('hidden')) {
-        submenu.classList.remove('hidden');
-        arrow.style.transform = 'rotate(180deg)';
-      } else {
-        submenu.classList.add('hidden');
-        arrow.style.transform = 'rotate(0deg)';
+    function applyDashPreset() {
+      const preset = document.getElementById('dashPeriodPreset').value;
+      const today = new Date();
+      let startDate, endDate;
+
+      switch (preset) {
+        case 'today':
+          startDate = endDate = formatDateLocal(today);
+          break;
+        case 'this_week':
+          const dayOfWeek = today.getDay();
+          const monday = new Date(today);
+          monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+          startDate = formatDateLocal(monday);
+          endDate = formatDateLocal(today);
+          break;
+        case 'this_month':
+          startDate = formatDateLocal(new Date(today.getFullYear(), today.getMonth(), 1));
+          endDate = formatDateLocal(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+          break;
+        case 'last_month':
+          startDate = formatDateLocal(new Date(today.getFullYear(), today.getMonth() - 1, 1));
+          endDate = formatDateLocal(new Date(today.getFullYear(), today.getMonth(), 0));
+          break;
+        case 'this_quarter':
+          const quarter = Math.floor(today.getMonth() / 3);
+          startDate = formatDateLocal(new Date(today.getFullYear(), quarter * 3, 1));
+          endDate = formatDateLocal(new Date(today.getFullYear(), (quarter + 1) * 3, 0));
+          break;
+        case 'this_year':
+          startDate = formatDateLocal(new Date(today.getFullYear(), 0, 1));
+          endDate = formatDateLocal(new Date(today.getFullYear(), 11, 31));
+          break;
+        default:
+          return;
+      }
+
+      document.getElementById('dashStartDate').value = startDate;
+      document.getElementById('dashEndDate').value = endDate;
+    }
+
+    // ダッシュボードフィルタリセット
+    function resetDashFilters() {
+      document.getElementById('dashPeriodPreset').value = 'this_year';
+      applyDashPreset();
+      document.getElementById('dashSearchText').value = '';
+      document.querySelectorAll('input[name^="dash_"][type="checkbox"]').forEach(cb => cb.checked = false);
+      applyDashFilters();
+    }
+
+    // ダッシュボードフィルタ適用
+    async function applyDashFilters() {
+      try {
+        const startDate = document.getElementById('dashStartDate').value;
+        const endDate = document.getElementById('dashEndDate').value;
+        const searchText = document.getElementById('dashSearchText').value;
+
+        if (!startDate || !endDate) {
+          alert('開始日と終了日を選択してください。');
+          return;
+        }
+
+        // 共通スクリプトで使用される変数を更新
+        currentStartDate = startDate;
+        currentEndDate = endDate;
+        
+        console.log('日付フィルタ設定:', { startDate, endDate });
+
+        // 期間に基づいて自動的にグラフ表示単位を計算
+        const granularity = calculateDashGranularity(startDate, endDate);
+
+        const memberIds = Array.from(document.querySelectorAll('input[name="dash_member_ids[]"]:checked'))
+          .map(cb => cb.value).join(',');
+        const teamIds = Array.from(document.querySelectorAll('input[name="dash_team_ids[]"]:checked'))
+          .map(cb => cb.value).join(',');
+        const productIds = Array.from(document.querySelectorAll('input[name="dash_product_ids[]"]:checked'))
+          .map(cb => cb.value).join(',');
+
+        console.log('🔍 ダッシュボードフィルタ:', {
+          memberIds: memberIds || '(なし)',
+          teamIds: teamIds || '(なし)',
+          productIds: productIds || '(なし)',
+          チームチェックボックス数: document.querySelectorAll('input[name="dash_team_ids[]"]').length,
+          チェック済みチーム数: document.querySelectorAll('input[name="dash_team_ids[]"]:checked').length
+        });
+
+        // 月別表示用：選択期間が含まれる年を取得
+        const year = new Date(startDate).getFullYear();
+        const yearStart = `${year}-01-01`;
+        const yearEnd = `${year}-12-31`;
+
+        const params = new URLSearchParams({
+          start_date: yearStart,
+          end_date: yearEnd,
+          search_text: searchText,
+          granularity: 'monthly'
+        });
+
+        if (memberIds) params.append('member_ids', memberIds);
+        if (teamIds) params.append('team_ids', teamIds);
+        if (productIds) params.append('product_ids', productIds);
+        
+        console.log('📤 APIリクエストURL:', `/api/dashboard.php?${params.toString()}`);
+
+        const response = await fetch(`/api/dashboard.php?${params}`);
+        const result = await response.json();
+
+        if (result.success) {
+          updateDashScoreCards(result.score_cards);
+          updateMonthlyTrendChart(result.trend, year);
+        } else {
+          alert('データの取得に失敗しました。');
+        }
+
+        // 実績管理データも同時に取得・更新
+        await loadPerformanceData(startDate, endDate);
+      } catch (error) {
+        console.error('Error in applyDashFilters:', error);
+        alert('エラーが発生しました。');
       }
     }
 
-    // 実績管理ドロップダウンの開閉
-    function togglePerformanceMenu() {
-      const submenu = document.getElementById('performanceSubmenu');
-      const arrow = document.getElementById('performanceArrow');
+    // 実績管理データ取得
+    async function loadPerformanceData(startDate, endDate) {
+      try {
+        console.log('実績管理データ取得開始:', { startDate, endDate, approval_filter: currentGraphApprovalFilter });
+        
+        // 詳細フィルタのパラメータを収集
+        const memberIds = Array.from(document.querySelectorAll('input[name="dash_member_ids[]"]:checked'))
+          .map(cb => cb.value).join(',');
+        const teamIds = Array.from(document.querySelectorAll('input[name="dash_team_ids[]"]:checked'))
+          .map(cb => cb.value).join(',');
+        const productIds = Array.from(document.querySelectorAll('input[name="dash_product_ids[]"]:checked'))
+          .map(cb => cb.value).join(',');
+        const searchText = document.getElementById('dashSearchText')?.value || '';
+        
+        console.log('🔍 詳細フィルタパラメータ:', {
+          memberIds: memberIds || '(なし)',
+          teamIds: teamIds || '(なし)',
+          productIds: productIds || '(なし)',
+          searchText: searchText || '(なし)'
+        });
+        
+        const params = new URLSearchParams({
+          period: 'custom',
+          start_date: startDate,
+          end_date: endDate,
+          approval_filter: currentGraphApprovalFilter
+        });
+        
+        if (memberIds) params.append('member_ids', memberIds);
+        if (teamIds) params.append('team_ids', teamIds);
+        if (productIds) params.append('product_ids', productIds);
+        if (searchText) params.append('search_text', searchText);
+        
+        let url = `/api/performance.php?${params}`;
 
-      if (submenu.classList.contains('hidden')) {
-        submenu.classList.remove('hidden');
-        arrow.style.transform = 'rotate(180deg)';
-      } else {
-        submenu.classList.add('hidden');
-        arrow.style.transform = 'rotate(0deg)';
+        console.log('APIリクエストURL:', url);
+        
+        const response = await fetch(url);
+        const result = await response.json();
+
+        console.log('実績管理データ取得結果:', result);
+
+        if (result.success) {
+          // 日毎の売上データを月ごとに集計
+          const dailySales = result.daily_sales || [];
+          console.log('日毎の売上データ件数:', dailySales.length);
+          
+          // 月ごとに集計
+          const monthlyMap = {};
+          dailySales.forEach(day => {
+            const month = day.date.substring(0, 7); // YYYY-MM
+            if (!monthlyMap[month]) {
+              monthlyMap[month] = {
+                month: month,
+                sales_count: 0,
+                total_sales: 0,
+                total_profit: 0,
+                total_points: 0
+              };
+            }
+            monthlyMap[month].sales_count += parseInt(day.sales_count) || 0;
+            monthlyMap[month].total_sales += parseFloat(day.total_sales) || 0;
+            monthlyMap[month].total_profit += parseFloat(day.total_profit) || 0;
+            monthlyMap[month].total_points += parseFloat(day.total_points) || 0;
+          });
+          
+          monthlySalesData = Object.values(monthlyMap);
+          console.log('月ごとの売上データ件数:', monthlySalesData.length);
+          
+          // 降順（最新が上）でソート
+          monthlySalesData.sort((a, b) => b.month.localeCompare(a.month));
+          monthlySortColumn = 'month';
+          monthlySortOrder = 'desc';
+          renderMonthlySalesTable();
+          
+          // ソートインジケーター更新
+          updateMonthlySortIndicators();
+          
+          console.log('実績管理データの更新が完了しました');
+        } else {
+          console.error('実績管理データの取得に失敗しました:', result.message);
+        }
+      } catch (error) {
+        console.error('Error in loadPerformanceData:', error);
+        alert('実績管理データの取得中にエラーが発生しました: ' + error.message);
       }
     }
+
+    // 月ごとの売上テーブル描画
+    function renderMonthlySalesTable() {
+      const tbody = document.getElementById('monthlySalesTableBody');
+      tbody.innerHTML = '';
+
+      if (monthlySalesData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
+        return;
+      }
+
+      // 月データを全て表示（最大12件なのでページネーション不要）
+      monthlySalesData.forEach(monthly => {
+        const [year, month] = monthly.month.split('-');
+        const monthLabel = `${year}年${parseInt(month)}月`;
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${monthLabel}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${monthly.sales_count}件</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${parseFloat(monthly.total_sales).toLocaleString()}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">¥${parseFloat(monthly.total_profit || 0).toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ソート
+    function sortMonthlyTable(column) {
+      // 同じカラムをクリックした場合は昇順/降順を切り替え
+      if (monthlySortColumn === column) {
+        monthlySortOrder = monthlySortOrder === 'desc' ? 'asc' : 'desc';
+      } else {
+        monthlySortColumn = column;
+        monthlySortOrder = 'desc'; // 新しいカラムは降順から開始
+      }
+
+      // データをソート
+      monthlySalesData.sort((a, b) => {
+        let aVal, bVal;
+        
+        switch(column) {
+          case 'month':
+            aVal = a.month;
+            bVal = b.month;
+            break;
+          case 'sales_count':
+            aVal = parseInt(a.sales_count) || 0;
+            bVal = parseInt(b.sales_count) || 0;
+            break;
+          case 'total_sales':
+            aVal = parseFloat(a.total_sales) || 0;
+            bVal = parseFloat(b.total_sales) || 0;
+            break;
+          case 'total_profit':
+            aVal = parseFloat(a.total_profit) || 0;
+            bVal = parseFloat(b.total_profit) || 0;
+            break;
+          default:
+            return 0;
+        }
+
+        if (monthlySortOrder === 'desc') {
+          return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+        } else {
+          return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+        }
+      });
+      
+      // ソートインジケーター更新
+      updateMonthlySortIndicators();
+      
+      renderMonthlySalesTable();
+    }
+
+    // 月ごとの売上ソートインジケーター更新
+    function updateMonthlySortIndicators() {
+      const indicators = {
+        'month': 'sortIndicatorMonthlyMonth',
+        'sales_count': 'sortIndicatorMonthlySalesCount',
+        'total_sales': 'sortIndicatorMonthlyTotalSales',
+        'total_profit': 'sortIndicatorMonthlyTotalProfit'
+      };
+
+      Object.entries(indicators).forEach(([column, indicatorId]) => {
+        const indicator = document.getElementById(indicatorId);
+        if (!indicator) return;
+        
+        if (column === monthlySortColumn) {
+          indicator.textContent = monthlySortOrder === 'desc' ? '▼' : '▲';
+        } else {
+          indicator.textContent = '';
+        }
+      });
+    }
+
   </script>
 </body>
 </html>

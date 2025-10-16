@@ -11,8 +11,8 @@
 
   <!-- ナビゲーション -->
   <nav class="flex-1 overflow-y-auto py-4">
-    <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-      <span>ランキングサマリー</span>
+    <a href="/admin/dashboard.php" class="flex items-center px-6 py-3 <?= $active_page === 'dashboard' ? 'text-white bg-blue-600 border-l-4 border-blue-700' : 'text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300' ?>">
+      <span <?= $active_page === 'dashboard' ? 'class="font-medium"' : '' ?>>ランキングサマリー</span>
     </a>
     
     <!-- マスタ管理ドロップダウン -->
@@ -45,26 +45,26 @@
       </div>
     </div>
     
-    <a href="/admin/sales/input.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-      <span>売上管理</span>
+    <a href="/admin/sales/input.php" class="flex items-center px-6 py-3 <?= $active_page === 'sales' ? 'text-white bg-blue-600 border-l-4 border-blue-700' : 'text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300' ?>">
+      <span <?= $active_page === 'sales' ? 'class="font-medium"' : '' ?>>売上管理</span>
     </a>
 
     <!-- 承認管理ドロップダウン -->
     <div>
-      <button onclick="toggleApprovalMenu()" class="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-        <span>承認管理</span>
-        <svg id="approvalArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <button onclick="toggleApprovalMenu()" class="w-full flex items-center justify-between px-6 py-3 <?= $active_page === 'approvals' ? 'text-white bg-blue-600 border-l-4 border-blue-700' : 'text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300' ?>">
+        <span <?= $active_page === 'approvals' ? 'class="font-medium"' : '' ?>>承認管理</span>
+        <svg id="approvalArrow" class="w-4 h-4 transition-transform duration-200 <?= $active_page === 'approvals' ? 'rotate-180' : '' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
       </button>
-      <div id="approvalSubmenu" class="hidden bg-gray-50">
-        <a href="/admin/approvals.php?tab=sales" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+      <div id="approvalSubmenu" class="bg-gray-50 <?= $active_page === 'approvals' ? '' : 'hidden' ?>">
+        <a href="/admin/approvals.php?tab=sales" id="salesTabLink" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
           <span>売上承認</span>
         </a>
-        <a href="/admin/approvals.php?tab=actions" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+        <a href="/admin/approvals.php?tab=actions" id="actionsTabLink" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
           <span>アクション承認</span>
         </a>
-        <a href="/admin/approvals.php?tab=tasks" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+        <a href="/admin/approvals.php?tab=tasks" id="tasksTabLink" class="flex items-center px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
           <span>タスク承認</span>
         </a>
       </div>
@@ -72,33 +72,54 @@
 
     <!-- 実績管理ドロップダウン -->
     <div>
-      <button onclick="togglePerformanceMenu()" class="w-full flex items-center justify-between px-6 py-3 text-white bg-blue-600 border-l-4 border-blue-700">
-        <span class="font-medium">実績管理</span>
-        <svg id="performanceArrow" class="w-4 h-4 transition-transform duration-200 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <button onclick="togglePerformanceMenu()" class="w-full flex items-center justify-between px-6 py-3 <?= (strpos($active_page, 'timeseries_') === 0 || $active_page === 'product' || $active_page === 'member_team') ? 'text-white bg-blue-600 border-l-4 border-blue-700' : 'text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300' ?>">
+        <span <?= (strpos($active_page, 'timeseries_') === 0 || $active_page === 'product' || $active_page === 'member_team') ? 'class="font-medium"' : '' ?>>実績管理</span>
+        <svg id="performanceArrow" class="w-4 h-4 transition-transform duration-200 <?= (strpos($active_page, 'timeseries_') === 0 || $active_page === 'product' || $active_page === 'member_team') ? 'rotate-180' : '' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
       </button>
-      <div id="performanceSubmenu" class="bg-gray-50">
-        <a href="/admin/performance/daily.php" class="flex items-center px-6 py-2 pl-12 text-sm <?= $active_page === 'daily' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-200' ?>">
-          <span>日別</span>
+      <div id="performanceSubmenu" class="bg-gray-50 <?= (strpos($active_page, 'timeseries_') === 0 || $active_page === 'product' || $active_page === 'member_team') ? '' : 'hidden' ?>">
+        <!-- 時系列サブメニュー -->
+        <div>
+          <button onclick="toggleTimeSeriesMenu()" class="w-full flex items-center justify-between px-6 py-2 pl-12 text-sm text-gray-700 hover:bg-gray-200">
+            <span>時系列</span>
+            <svg id="timeSeriesArrow" class="w-3 h-3 transition-transform duration-200 <?= (strpos($active_page, 'timeseries_') === 0) ? 'rotate-180' : '' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+          <div id="timeSeriesSubmenu" class="bg-gray-100 <?= (strpos($active_page, 'timeseries_') === 0) ? '' : 'hidden' ?>">
+            <a href="/admin/performance/monthly.php" class="flex items-center px-6 py-2 pl-20 text-sm <?= $active_page === 'timeseries_monthly' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-200' ?>">
+              <span>月別</span>
+            </a>
+            <a href="/admin/performance/weekly.php" class="flex items-center px-6 py-2 pl-20 text-sm <?= $active_page === 'timeseries_weekly' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-200' ?>">
+              <span>週別</span>
+            </a>
+            <a href="/admin/performance/daily.php" class="flex items-center px-6 py-2 pl-20 text-sm <?= $active_page === 'timeseries_daily' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-200' ?>">
+              <span>日別</span>
+            </a>
+            <a href="/admin/performance/dayofweek.php" class="flex items-center px-6 py-2 pl-20 text-sm <?= $active_page === 'timeseries_dayofweek' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-200' ?>">
+              <span>曜日別</span>
+            </a>
+          </div>
+        </div>
+        
+        <!-- 商品別 -->
+        <a href="/admin/performance/product.php" class="flex items-center px-6 py-2 pl-12 text-sm <?= $active_page === 'product' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-200' ?>">
+          <span>商品別</span>
         </a>
-        <a href="/admin/performance/weekly.php" class="flex items-center px-6 py-2 pl-12 text-sm <?= $active_page === 'weekly' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-200' ?>">
-          <span>週別</span>
-        </a>
-        <a href="/admin/performance/monthly.php" class="flex items-center px-6 py-2 pl-12 text-sm <?= $active_page === 'monthly' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-200' ?>">
-          <span>月別</span>
-        </a>
-        <a href="/admin/performance/dayofweek.php" class="flex items-center px-6 py-2 pl-12 text-sm <?= $active_page === 'dayofweek' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-200' ?>">
-          <span>曜日別</span>
+        
+        <!-- メンバー別/チーム別 -->
+        <a href="/admin/performance/member_team.php" class="flex items-center px-6 py-2 pl-12 text-sm <?= $active_page === 'member_team' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-200' ?>">
+          <span>メンバー別/チーム別</span>
         </a>
       </div>
     </div>
 
-    <a href="/admin/events.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-      <span>イベント</span>
+    <a href="/admin/events.php" class="flex items-center px-6 py-3 <?= $active_page === 'events' ? 'text-white bg-blue-600 border-l-4 border-blue-700' : 'text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300' ?>">
+      <span <?= $active_page === 'events' ? 'class="font-medium"' : '' ?>>イベント</span>
     </a>
-    <a href="/admin/notices.php" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300">
-      <span>お知らせ</span>
+    <a href="/admin/notices.php" class="flex items-center px-6 py-3 <?= $active_page === 'notices' ? 'text-white bg-blue-600 border-l-4 border-blue-700' : 'text-gray-700 hover:bg-gray-100 border-l-4 border-transparent hover:border-gray-300' ?>">
+      <span <?= $active_page === 'notices' ? 'class="font-medium"' : '' ?>>お知らせ</span>
     </a>
   </nav>
 
@@ -110,4 +131,76 @@
     </div>
   </div>
 </aside>
+
+<script>
+  // サイドバーのドロップダウンメニュー制御（既存の関数がない場合のみ定義）
+  if (typeof toggleMasterMenu === 'undefined') {
+    function toggleMasterMenu() {
+      const submenu = document.getElementById('masterSubmenu');
+      const arrow = document.getElementById('masterArrow');
+      
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+  }
+
+  if (typeof toggleApprovalMenu === 'undefined') {
+    function toggleApprovalMenu() {
+      const submenu = document.getElementById('approvalSubmenu');
+      const arrow = document.getElementById('approvalArrow');
+      
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+  }
+
+  if (typeof togglePerformanceMenu === 'undefined') {
+    function togglePerformanceMenu() {
+      const submenu = document.getElementById('performanceSubmenu');
+      const arrow = document.getElementById('performanceArrow');
+      
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+        
+        // 時系列サブメニューも自動的に開く
+        const timeSeriesSubmenu = document.getElementById('timeSeriesSubmenu');
+        const timeSeriesArrow = document.getElementById('timeSeriesArrow');
+        if (timeSeriesSubmenu && timeSeriesSubmenu.classList.contains('hidden')) {
+          timeSeriesSubmenu.classList.remove('hidden');
+          if (timeSeriesArrow) timeSeriesArrow.style.transform = 'rotate(180deg)';
+        }
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+  }
+
+  if (typeof toggleTimeSeriesMenu === 'undefined') {
+    function toggleTimeSeriesMenu() {
+      const submenu = document.getElementById('timeSeriesSubmenu');
+      const arrow = document.getElementById('timeSeriesArrow');
+      
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+  }
+
+</script>
 

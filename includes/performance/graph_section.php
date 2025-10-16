@@ -17,6 +17,9 @@
       <button id="graphTabTeamSales" onclick="switchGraphTab('team_sales')" class="px-4 py-2 rounded bg-gray-200 text-gray-700">
         チーム別売上
       </button>
+      <button id="graphTabTeamProfit" onclick="switchGraphTab('team_profit')" class="px-4 py-2 rounded bg-gray-200 text-gray-700">
+        チーム別粗利益
+      </button>
     </div>
     <div class="flex gap-2">
       <button id="btnGraphApproved" onclick="toggleGraphApprovalFilter('approved')" class="px-4 py-2 rounded bg-blue-600 text-white font-medium">

@@ -17,3 +17,4 @@ CREATE TABLE IF NOT EXISTS event_product_category_multipliers (
 SELECT 'event_product_category_multipliers テーブルを作成しました' AS message;
 
 
+

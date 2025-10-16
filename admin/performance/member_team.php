@@ -3,8 +3,8 @@ require_once '../../includes/session.php';
 require_once '../../config/database.php';
 requireLogin();
 
-$page_title = '週別実績管理';
-$active_page = 'timeseries_weekly';
+$page_title = 'メンバー別/チーム別実績';
+$active_page = 'member_team';
 $default_period = 'this_month'; // デフォルト期間
 
 // メンバー・チーム・商品一覧取得（フィルタ用）
@@ -64,7 +64,7 @@ $products = $stmt->fetchAll();
                     <option value="this_month" <?= $default_period === 'this_month' ? 'selected' : '' ?>>今月</option>
                     <option value="last_month">先月</option>
                     <option value="this_quarter">今四半期</option>
-                    <option value="this_year" <?= $default_period === 'this_year' ? 'selected' : '' ?>>今年</option>
+                    <option value="this_year">今年</option>
                   </select>
                   <button onclick="applyDashFilters()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
                     適用
@@ -124,42 +124,9 @@ $products = $stmt->fetchAll();
           </div>
         </div>
 
-        <?php include '../../includes/performance/dashboard_scorecards.php'; ?>
-        <?php include '../../includes/performance/trend_chart.php'; ?>
-
-        <!-- 週ごとの売上テーブル -->
-        <div class="bg-white rounded-lg shadow mb-6">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">週ごとの売上</h3>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortWeeklyTable('week')">
-                    週
-                    <span id="sortIndicatorWeeklyWeek" class="ml-1">▼</span>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortWeeklyTable('sales_count')">
-                    売上件数
-                    <span id="sortIndicatorWeeklySalesCount" class="ml-1"></span>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortWeeklyTable('total_sales')">
-                    売上金額
-                    <span id="sortIndicatorWeeklyTotalSales" class="ml-1"></span>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortWeeklyTable('total_profit')">
-                    粗利
-                    <span id="sortIndicatorWeeklyTotalProfit" class="ml-1"></span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody id="weeklySalesTableBody" class="bg-white divide-y divide-gray-200">
-                <!-- データはJavaScriptで挿入 -->
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <?php include '../../includes/performance/summary.php'; ?>
+        <?php include '../../includes/performance/graph_section.php'; ?>
+        <?php include '../../includes/performance/data_tables.php'; ?>
       </div>
     </main>
   </div>
@@ -173,9 +140,6 @@ $products = $stmt->fetchAll();
     const products = <?= json_encode($products) ?>;
 
     // ページ固有の変数
-    let weeklySalesData = [];
-    let weeklySortColumn = 'week';
-    let weeklySortOrder = 'desc';
     let dashFilterDetailsOpen = false;
 
     // 共通スクリプトより先に変数を定義
@@ -207,9 +171,31 @@ $products = $stmt->fetchAll();
       console.log('loadFilterOptions: スキップ（loadDashboardFiltersを使用）');
     };
 
+    // デフォルトのグラフタブをメンバー別売上に変更
+    currentGraphTab = 'member_sales';
+
     // ダッシュボードフィルタの初期化
     document.addEventListener('DOMContentLoaded', () => {
       console.log('ページ初期化開始');
+      
+      // 商品別グラフのタブを非表示にする
+      const productSalesBtn = document.getElementById('graphTabProductSales');
+      const productProfitBtn = document.getElementById('graphTabProductProfit');
+      if (productSalesBtn) productSalesBtn.style.display = 'none';
+      if (productProfitBtn) productProfitBtn.style.display = 'none';
+      
+      // デフォルトでメンバー別売上を選択
+      const memberSalesBtn = document.getElementById('graphTabMemberSales');
+      if (memberSalesBtn) {
+        memberSalesBtn.className = 'px-4 py-2 rounded bg-blue-600 text-white font-medium';
+      }
+      
+      // 商品別実績タブを非表示にする
+      const tabProducts = document.getElementById('tabProducts');
+      const productsTab = document.getElementById('productsTab');
+      if (tabProducts) tabProducts.style.display = 'none';
+      if (productsTab) productsTab.style.display = 'none';
+      
       loadDashboardFilters();
       applyDashPreset();
       // ページ初期化完了フラグを立ててから、初回データ取得
@@ -331,65 +317,11 @@ $products = $stmt->fetchAll();
 
     // ダッシュボードフィルタリセット
     function resetDashFilters() {
-      document.getElementById('dashPeriodPreset').value = 'this_month';
+      document.getElementById('dashPeriodPreset').value = 'today';
       applyDashPreset();
       document.getElementById('dashSearchText').value = '';
       document.querySelectorAll('input[name^="dash_"][type="checkbox"]').forEach(cb => cb.checked = false);
       applyDashFilters();
-    }
-
-    // 日別データを週ごとに集計（月曜始まり）
-    function aggregateWeeklyData(dailyData, startDate, endDate) {
-      // 開始日を月曜日に調整
-      const start = new Date(startDate);
-      const startDay = start.getDay();
-      const daysToMonday = startDay === 0 ? -6 : 1 - startDay;
-      start.setDate(start.getDate() + daysToMonday);
-
-      // 終了日を日曜日に調整
-      const end = new Date(endDate);
-      const endDay = end.getDay();
-      const daysToSunday = endDay === 0 ? 0 : 7 - endDay;
-      end.setDate(end.getDate() + daysToSunday);
-
-      const weeks = [];
-      let weekStart = new Date(start);
-
-      while (weekStart <= end) {
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-
-        const weekLabel = `${formatDateShort(weekStart)} - ${formatDateShort(weekEnd)}`;
-        let weekSales = 0;
-        let weekProfit = 0;
-
-        // この週に含まれる日別データを集計
-        dailyData.forEach(day => {
-          const dayDate = new Date(day.period);
-          if (dayDate >= weekStart && dayDate <= weekEnd) {
-            weekSales += parseFloat(day.sales) || 0;
-            weekProfit += parseFloat(day.profit) || 0;
-          }
-        });
-
-        weeks.push({
-          period: weekStart.toISOString().split('T')[0],
-          label: weekLabel,
-          sales: weekSales,
-          profit: weekProfit
-        });
-
-        weekStart.setDate(weekStart.getDate() + 7);
-      }
-
-      return weeks;
-    }
-
-    // 日付を短いフォーマットに変換（MM/DD）
-    function formatDateShort(date) {
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${month}/${day}`;
     }
 
     // ダッシュボードフィルタ適用
@@ -410,49 +342,7 @@ $products = $stmt->fetchAll();
         
         console.log('日付フィルタ設定:', { startDate, endDate });
 
-        const memberIds = Array.from(document.querySelectorAll('input[name="dash_member_ids[]"]:checked'))
-          .map(cb => cb.value).join(',');
-        const teamIds = Array.from(document.querySelectorAll('input[name="dash_team_ids[]"]:checked'))
-          .map(cb => cb.value).join(',');
-        const productIds = Array.from(document.querySelectorAll('input[name="dash_product_ids[]"]:checked'))
-          .map(cb => cb.value).join(',');
-
-        console.log('🔍 ダッシュボードフィルタ:', {
-          memberIds: memberIds || '(なし)',
-          teamIds: teamIds || '(なし)',
-          productIds: productIds || '(なし)',
-          チームチェックボックス数: document.querySelectorAll('input[name="dash_team_ids[]"]').length,
-          チェック済みチーム数: document.querySelectorAll('input[name="dash_team_ids[]"]:checked').length
-        });
-
-        // 週別表示用：日別データを取得して週ごとに集計
-        const params = new URLSearchParams({
-          start_date: startDate,
-          end_date: endDate,
-          search_text: searchText,
-          granularity: 'daily' // 日別データを取得して後で週ごとに集計
-        });
-
-        if (memberIds) params.append('member_ids', memberIds);
-        if (teamIds) params.append('team_ids', teamIds);
-        if (productIds) params.append('product_ids', productIds);
-        
-        console.log('📤 APIリクエストURL:', `/api/dashboard.php?${params.toString()}`);
-
-        const response = await fetch(`/api/dashboard.php?${params}`);
-        const result = await response.json();
-
-        if (result.success) {
-          updateDashScoreCards(result.score_cards);
-          
-          // 日別データを週ごとに集計
-          const weeklyData = aggregateWeeklyData(result.trend, startDate, endDate);
-          updateWeeklyTrendChart(weeklyData);
-        } else {
-          alert('データの取得に失敗しました。');
-        }
-
-        // 実績管理データも同時に取得・更新
+        // 実績管理データを取得
         await loadPerformanceData(startDate, endDate);
       } catch (error) {
         console.error('Error in applyDashFilters:', error);
@@ -503,52 +393,29 @@ $products = $stmt->fetchAll();
         console.log('実績管理データ取得結果:', result);
 
         if (result.success) {
-          // 日毎の売上データを週ごとに集計
-          const dailySales = result.daily_sales || [];
-          console.log('日毎の売上データ件数:', dailySales.length);
+          // サマリーカード更新
+          updateSummary(result.summary);
           
-          // 週ごとに集計（月曜始まり）
-          const weeklyMap = {};
-          dailySales.forEach(day => {
-            const date = new Date(day.date);
-            // その週の月曜日の日付を取得
-            const dayOfWeek = date.getDay();
-            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-            const monday = new Date(date);
-            monday.setDate(date.getDate() - daysToMonday);
-            const weekKey = monday.toISOString().split('T')[0]; // YYYY-MM-DD（月曜日）
-            
-            // 日曜日を計算
-            const sunday = new Date(monday);
-            sunday.setDate(monday.getDate() + 6);
-            
-            if (!weeklyMap[weekKey]) {
-              weeklyMap[weekKey] = {
-                week: weekKey,
-                weekLabel: `${formatDateShort(monday)} - ${formatDateShort(sunday)}`,
-                sales_count: 0,
-                total_sales: 0,
-                total_profit: 0,
-                total_points: 0
-              };
-            }
-            weeklyMap[weekKey].sales_count += parseInt(day.sales_count) || 0;
-            weeklyMap[weekKey].total_sales += parseFloat(day.total_sales) || 0;
-            weeklyMap[weekKey].total_profit += parseFloat(day.total_profit) || 0;
-            weeklyMap[weekKey].total_points += parseFloat(day.total_points) || 0;
-          });
+          // メンバー別実績テーブル更新（日付フィルタ適用済み）
+          console.log('メンバー別実績データ件数:', result.members?.length || 0);
+          renderMembersTable(result.members);
           
-          weeklySalesData = Object.values(weeklyMap);
-          console.log('週ごとの売上データ件数:', weeklySalesData.length);
+          // チーム別実績テーブル更新（日付フィルタ適用済み）
+          console.log('チーム別実績データ件数:', result.teams?.length || 0);
+          renderTeamsTable(result.teams);
           
-          // 降順（最新が上）でソート
-          weeklySalesData.sort((a, b) => b.week.localeCompare(a.week));
-          weeklySortColumn = 'week';
-          weeklySortOrder = 'desc';
-          renderWeeklySalesTable();
+          // 商品別実績テーブル更新（日付フィルタ適用済み）
+          console.log('商品別実績データ件数:', result.products?.length || 0);
+          renderProductsTable(result.products);
           
-          // ソートインジケーター更新
-          updateWeeklySortIndicators();
+          // グラフデータ更新
+          cachedGraphData = result.graphs;
+          
+          // メンバーが選択されているかチェック
+          // const hasMemberFilter = memberIds && memberIds.length > 0;
+          // updateGraphTabsVisibility(hasMemberFilter);
+          
+          updateChartByTab(currentGraphTab);
           
           console.log('実績管理データの更新が完了しました');
         } else {
@@ -560,96 +427,39 @@ $products = $stmt->fetchAll();
       }
     }
 
-    // 日毎の売上テーブル描画
-    function renderWeeklySalesTable() {
-      const tbody = document.getElementById('weeklySalesTableBody');
-      tbody.innerHTML = '';
-
-      if (weeklySalesData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">データがありません</td></tr>';
-        return;
-      }
-
-      // 週データを全て表示（ページネーション不要）
-      weeklySalesData.forEach(weekly => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${weekly.weekLabel}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${weekly.sales_count}件</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥${parseFloat(weekly.total_sales).toLocaleString()}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">¥${parseFloat(weekly.total_profit || 0).toLocaleString()}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    // ソート
-    function sortWeeklyTable(column) {
-      // 同じカラムをクリックした場合は昇順/降順を切り替え
-      if (weeklySortColumn === column) {
-        weeklySortOrder = weeklySortOrder === 'desc' ? 'asc' : 'desc';
+    // グラフタブの表示/非表示を切り替え
+    function updateGraphTabsVisibility(hasMemberFilter) {
+      const memberSalesBtn = document.getElementById('graphTabMemberSales');
+      const memberProfitBtn = document.getElementById('graphTabMemberProfit');
+      const teamSalesBtn = document.getElementById('graphTabTeamSales');
+      const teamProfitBtn = document.getElementById('graphTabTeamProfit');
+      
+      if (hasMemberFilter) {
+        // メンバーフィルタが適用されている場合は、商品別のみ表示
+        console.log('メンバーフィルタが適用されているため、商品別グラフのみ表示');
+        
+        if (memberSalesBtn) memberSalesBtn.style.display = 'none';
+        if (memberProfitBtn) memberProfitBtn.style.display = 'none';
+        if (teamSalesBtn) teamSalesBtn.style.display = 'none';
+        if (teamProfitBtn) teamProfitBtn.style.display = 'none';
+        
+        // 現在のタブがメンバー別やチーム別の場合は、商品別売上に切り替え
+        if (currentGraphTab === 'member_sales' || 
+            currentGraphTab === 'member_profit' || 
+            currentGraphTab === 'team_sales' ||
+            currentGraphTab === 'team_profit') {
+          console.log('現在のタブを商品別売上に切り替え');
+          switchGraphTab('product_sales');
+        }
       } else {
-        weeklySortColumn = column;
-        weeklySortOrder = 'desc'; // 新しいカラムは降順から開始
+        // メンバーフィルタが適用されていない場合は、全て表示
+        console.log('メンバーフィルタなし、全てのグラフタブを表示');
+        
+        if (memberSalesBtn) memberSalesBtn.style.display = '';
+        if (memberProfitBtn) memberProfitBtn.style.display = '';
+        if (teamSalesBtn) teamSalesBtn.style.display = '';
+        if (teamProfitBtn) teamProfitBtn.style.display = '';
       }
-
-      // データをソート
-      weeklySalesData.sort((a, b) => {
-        let aVal, bVal;
-        
-        switch(column) {
-          case 'week':
-            aVal = a.week;
-            bVal = b.week;
-            break;
-          case 'sales_count':
-            aVal = parseInt(a.sales_count) || 0;
-            bVal = parseInt(b.sales_count) || 0;
-            break;
-          case 'total_sales':
-            aVal = parseFloat(a.total_sales) || 0;
-            bVal = parseFloat(b.total_sales) || 0;
-            break;
-          case 'total_profit':
-            aVal = parseFloat(a.total_profit) || 0;
-            bVal = parseFloat(b.total_profit) || 0;
-            break;
-          default:
-            return 0;
-        }
-
-        if (weeklySortOrder === 'desc') {
-          return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
-        } else {
-          return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-        }
-      });
-      
-      // ソートインジケーター更新
-      updateWeeklySortIndicators();
-      
-      renderWeeklySalesTable();
-    }
-
-    // 週ごとの売上ソートインジケーター更新
-    function updateWeeklySortIndicators() {
-      const indicators = {
-        'week': 'sortIndicatorWeeklyWeek',
-        'sales_count': 'sortIndicatorWeeklySalesCount',
-        'total_sales': 'sortIndicatorWeeklyTotalSales',
-        'total_profit': 'sortIndicatorWeeklyTotalProfit'
-      };
-
-      Object.entries(indicators).forEach(([column, indicatorId]) => {
-        const indicator = document.getElementById(indicatorId);
-        if (!indicator) return;
-        
-        if (column === weeklySortColumn) {
-          indicator.textContent = weeklySortOrder === 'desc' ? '▼' : '▲';
-        } else{
-          indicator.textContent = '';
-        }
-      });
     }
 
   </script>
