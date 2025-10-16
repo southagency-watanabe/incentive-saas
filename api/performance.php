@@ -282,7 +282,7 @@ try {
   if ($start_date && $end_date) {
     $sr_product_where_conditions[] = "sr.date BETWEEN :start_date AND :end_date";
   }
-  
+
   // 基本パラメータのみを使用
   $product_params = [
     'tenant_id' => $tenant_id
@@ -291,7 +291,11 @@ try {
     $product_params['start_date'] = $start_date;
     $product_params['end_date'] = $end_date;
   }
-  
+
+  // チームフィルタまたはメンバーフィルタがある場合はmembersテーブルをJOIN
+  $need_member_join = !empty($team_ids) || !empty($member_ids);
+  $member_join = $need_member_join ? "LEFT JOIN members m ON sr.tenant_id = m.tenant_id AND sr.member_id = m.member_id" : "";
+
   // 詳細フィルタ条件を追加
   if (!empty($member_ids)) {
     $member_placeholders = [];
@@ -302,7 +306,9 @@ try {
     }
     $sr_product_where_conditions[] = "sr.member_id IN (" . implode(',', $member_placeholders) . ")";
   }
-  
+
+  // チームフィルタ条件（membersテーブルをJOINした後でのみ有効）
+  $team_where_condition = "";
   if (!empty($team_ids)) {
     $team_placeholders = [];
     foreach ($team_ids as $idx => $team_id) {
@@ -310,9 +316,9 @@ try {
       $team_placeholders[] = ":$key";
       $product_params[$key] = $team_id;
     }
-    $sr_product_where_conditions[] = "m.team_id IN (" . implode(',', $team_placeholders) . ")";
+    $team_where_condition = " AND m.team_id IN (" . implode(',', $team_placeholders) . ")";
   }
-  
+
   if (!empty($product_ids)) {
     $product_placeholders = [];
     foreach ($product_ids as $idx => $product_id) {
@@ -322,22 +328,19 @@ try {
     }
     $product_where .= " AND p.product_id IN (" . implode(',', $product_placeholders) . ")";
   }
-  
+
   if ($search_text !== '') {
     $product_where .= " AND p.product_name LIKE :search_text_product";
     $product_params['search_text_product'] = "%$search_text%";
   }
-  
+
   $sr_product_where = !empty($sr_product_where_conditions) ? " AND " . implode(" AND ", $sr_product_where_conditions) : "";
-  
-  // チームフィルタがある場合はmembersテーブルをJOIN
-  $need_member_join = !empty($team_ids);
-  $member_join = $need_member_join ? "LEFT JOIN members m ON sr.tenant_id = m.tenant_id AND sr.member_id = m.member_id" : "";
-  
+
   // デバッグログ: 商品別実績クエリ条件
   error_log('📦 商品別実績WHERE句: ' . $product_where);
+  error_log('📦 商品別実績チーム条件: ' . $team_where_condition);
   error_log('📦 商品別実績パラメータ: ' . json_encode($product_params));
-  
+
   $stmt = $pdo->prepare("
     SELECT
       p.product_id,
@@ -351,7 +354,7 @@ try {
     FROM products p
     LEFT JOIN sales_records sr ON p.tenant_id = sr.tenant_id AND p.product_id = sr.product_id{$sr_product_where}
     {$member_join}
-    WHERE {$product_where}
+    WHERE {$product_where}{$team_where_condition}
     GROUP BY p.product_id, p.product_name, p.cost
     HAVING total_quantity > 0
     ORDER BY total_sales DESC

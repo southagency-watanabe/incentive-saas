@@ -65,7 +65,6 @@ $products = $stmt->fetchAll();
                     <option value="this_week">今週</option>
                     <option value="this_month" selected>今月</option>
                     <option value="last_month">先月</option>
-                    <option value="this_quarter">今四半期</option>
                     <option value="this_year">今年</option>
                   </select>
                   <button onclick="applyFilters()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">

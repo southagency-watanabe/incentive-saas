@@ -63,7 +63,6 @@ $products = $stmt->fetchAll();
                     <option value="this_week" <?= $default_period === 'this_week' ? 'selected' : '' ?>>今週</option>
                     <option value="this_month" <?= $default_period === 'this_month' ? 'selected' : '' ?>>今月</option>
                     <option value="last_month">先月</option>
-                    <option value="this_quarter">今四半期</option>
                     <option value="this_year">今年</option>
                   </select>
                   <button onclick="applyDashFilters()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
@@ -126,7 +125,7 @@ $products = $stmt->fetchAll();
 
         <?php include '../../includes/performance/summary.php'; ?>
         <?php include '../../includes/performance/graph_section.php'; ?>
-        <?php include '../../includes/performance/data_tables.php'; ?>
+        <?php include '../../includes/performance/data_tables_product.php'; ?>
       </div>
     </main>
   </div>
@@ -171,49 +170,16 @@ $products = $stmt->fetchAll();
       console.log('loadFilterOptions: スキップ（loadDashboardFiltersを使用）');
     };
 
-    // デフォルトのデータタブを商品別実績に変更
-    currentDataTab = 'products';
-
     // ダッシュボードフィルタの初期化
     document.addEventListener('DOMContentLoaded', () => {
       console.log('ページ初期化開始');
-      
-      // メンバー別とチーム別のグラフタブを非表示にする
-      const memberSalesBtn = document.getElementById('graphTabMemberSales');
-      const memberProfitBtn = document.getElementById('graphTabMemberProfit');
-      const teamSalesBtn = document.getElementById('graphTabTeamSales');
-      const teamProfitBtn = document.getElementById('graphTabTeamProfit');
-      if (memberSalesBtn) memberSalesBtn.style.display = 'none';
-      if (memberProfitBtn) memberProfitBtn.style.display = 'none';
-      if (teamSalesBtn) teamSalesBtn.style.display = 'none';
-      if (teamProfitBtn) teamProfitBtn.style.display = 'none';
-      
-      // デフォルトで商品別売上を選択（既にデフォルトだが明示的に設定）
+
+      // デフォルトで商品別売上グラフを選択
       const productSalesBtn = document.getElementById('graphTabProductSales');
       if (productSalesBtn) {
         productSalesBtn.className = 'px-4 py-2 rounded bg-blue-600 text-white font-medium';
       }
-      
-      // メンバー別実績タブとチーム別実績タブを非表示にして、商品別実績タブのみ表示
-      const tabMembers = document.getElementById('tabMembers');
-      const membersTab = document.getElementById('membersTab');
-      const tabTeams = document.getElementById('tabTeams');
-      const teamsTab = document.getElementById('teamsTab');
-      if (tabMembers) tabMembers.style.display = 'none';
-      if (membersTab) membersTab.style.display = 'none';
-      if (tabTeams) tabTeams.style.display = 'none';
-      if (teamsTab) teamsTab.style.display = 'none';
-      
-      // 商品別実績タブをデフォルトで表示
-      const tabProducts = document.getElementById('tabProducts');
-      const productsTab = document.getElementById('productsTab');
-      if (tabProducts) {
-        tabProducts.className = 'py-3 px-2 border-b-2 border-blue-500 text-blue-600 font-medium';
-      }
-      if (productsTab) {
-        productsTab.classList.remove('hidden');
-      }
-      
+
       loadDashboardFilters();
       applyDashPreset();
       // ページ初期化完了フラグを立ててから、初回データ取得

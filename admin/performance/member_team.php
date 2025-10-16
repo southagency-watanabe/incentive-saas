@@ -63,7 +63,6 @@ $products = $stmt->fetchAll();
                     <option value="this_week" <?= $default_period === 'this_week' ? 'selected' : '' ?>>今週</option>
                     <option value="this_month" <?= $default_period === 'this_month' ? 'selected' : '' ?>>今月</option>
                     <option value="last_month">先月</option>
-                    <option value="this_quarter">今四半期</option>
                     <option value="this_year">今年</option>
                   </select>
                   <button onclick="applyDashFilters()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
@@ -126,7 +125,7 @@ $products = $stmt->fetchAll();
 
         <?php include '../../includes/performance/summary.php'; ?>
         <?php include '../../includes/performance/graph_section.php'; ?>
-        <?php include '../../includes/performance/data_tables.php'; ?>
+        <?php include '../../includes/performance/data_tables_member_team.php'; ?>
       </div>
     </main>
   </div>
@@ -177,25 +176,13 @@ $products = $stmt->fetchAll();
     // ダッシュボードフィルタの初期化
     document.addEventListener('DOMContentLoaded', () => {
       console.log('ページ初期化開始');
-      
-      // 商品別グラフのタブを非表示にする
-      const productSalesBtn = document.getElementById('graphTabProductSales');
-      const productProfitBtn = document.getElementById('graphTabProductProfit');
-      if (productSalesBtn) productSalesBtn.style.display = 'none';
-      if (productProfitBtn) productProfitBtn.style.display = 'none';
-      
-      // デフォルトでメンバー別売上を選択
+
+      // デフォルトでメンバー別売上グラフを選択
       const memberSalesBtn = document.getElementById('graphTabMemberSales');
       if (memberSalesBtn) {
         memberSalesBtn.className = 'px-4 py-2 rounded bg-blue-600 text-white font-medium';
       }
-      
-      // 商品別実績タブを非表示にする
-      const tabProducts = document.getElementById('tabProducts');
-      const productsTab = document.getElementById('productsTab');
-      if (tabProducts) tabProducts.style.display = 'none';
-      if (productsTab) productsTab.style.display = 'none';
-      
+
       loadDashboardFilters();
       applyDashPreset();
       // ページ初期化完了フラグを立ててから、初回データ取得

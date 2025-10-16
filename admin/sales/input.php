@@ -162,11 +162,10 @@ $productsJson = json_encode($products);
               <input type="date" id="filterEndDate" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
               <select id="filterPeriodPreset" onchange="applyFilterPreset()" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                 <option value="today">今日</option>
-                <option value="this_week">今週</option>
-                <option value="this_month" selected>今月</option>
-                <option value="last_month">先月</option>
-                <option value="this_quarter">今四半期</option>
-                <option value="this_year">今年</option>
+              <option value="this_week">今週</option>
+              <option value="this_month" selected>今月</option>
+              <option value="last_month">先月</option>
+              <option value="this_year">今年</option>
                 <option value="all">全期間</option>
               </select>
               <button onclick="applyFilters()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
