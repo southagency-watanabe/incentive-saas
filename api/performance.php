@@ -26,6 +26,42 @@ try {
   // デバッグログ
   error_log('🔍 API受信パラメータ: member_ids=' . json_encode($member_ids) . ', team_ids=' . json_encode($team_ids) . ', product_ids=' . json_encode($product_ids) . ', search_text=' . $search_text);
 
+  // チームと個人フィルタの統合ロジック（dashboard.phpと同じロジック）
+  $final_member_ids = [];
+  $team_member_ids = [];
+
+  if (!empty($team_ids)) {
+    // 選択されたチームに所属するメンバーIDを取得
+    $team_placeholders = implode(',', array_fill(0, count($team_ids), '?'));
+    $stmt = $pdo->prepare("
+      SELECT DISTINCT member_id
+      FROM members
+      WHERE tenant_id = ? AND team_id IN ($team_placeholders)
+    ");
+    $params_team = array_merge([$tenant_id], $team_ids);
+    $stmt->execute($params_team);
+    $team_member_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $final_member_ids = array_merge($final_member_ids, $team_member_ids);
+  }
+
+  if (!empty($member_ids)) {
+    // 選択された個人のメンバーIDを追加
+    foreach ($member_ids as $member_id) {
+      if (!in_array($member_id, $team_member_ids)) {
+        $final_member_ids[] = $member_id;
+      }
+    }
+  }
+
+  // 最終的なメンバーIDリストを使用（重複削除）
+  $final_member_ids = array_unique($final_member_ids);
+
+  // 以降のクエリでは $final_member_ids を使用し、team_ids は使わない
+  $member_ids = $final_member_ids;
+  $team_ids = []; // チームフィルタは使わない（すでにメンバーIDに変換済み）
+  
+  error_log('🔍 統合後のメンバーIDs: ' . json_encode($member_ids));
+
   // 期間に応じた日付範囲を設定
   switch ($period) {
     case 'current_month':
@@ -78,15 +114,7 @@ try {
     $where_clause .= " AND sr.member_id IN (" . implode(',', $placeholders) . ")";
   }
 
-  if (!empty($team_ids)) {
-    $placeholders = [];
-    foreach ($team_ids as $idx => $team_id) {
-      $key = "team_id_$idx";
-      $placeholders[] = ":$key";
-      $params[$key] = $team_id;
-    }
-    $where_clause .= " AND m.team_id IN (" . implode(',', $placeholders) . ")";
-  }
+  // team_idsは既にmember_idsに統合済み（上記のフィルタ統合ロジック参照）
 
   if (!empty($product_ids)) {
     $placeholders = [];
@@ -139,15 +167,7 @@ try {
     $approval_where_clause .= " AND sr.member_id IN (" . implode(',', $placeholders) . ")";
   }
   
-  if (!empty($team_ids)) {
-    $placeholders = [];
-    foreach ($team_ids as $idx => $team_id) {
-      $key = "approval_team_id_$idx";
-      $placeholders[] = ":$key";
-      $approval_params[$key] = $team_id;
-    }
-    $approval_where_clause .= " AND m.team_id IN (" . implode(',', $placeholders) . ")";
-  }
+  // team_idsは既にmember_idsに統合済み
   
   if (!empty($product_ids)) {
     $placeholders = [];
@@ -218,15 +238,7 @@ try {
     $member_where .= " AND m.member_id IN (" . implode(',', $member_placeholders) . ")";
   }
   
-  if (!empty($team_ids)) {
-    $team_placeholders = [];
-    foreach ($team_ids as $idx => $team_id) {
-      $key = "team_filter_$idx";
-      $team_placeholders[] = ":$key";
-      $member_params[$key] = $team_id;
-    }
-    $member_where .= " AND m.team_id IN (" . implode(',', $team_placeholders) . ")";
-  }
+  // team_idsは既にmember_idsに統合済み（上記のフィルタ統合ロジック参照）
   
   if (!empty($product_ids)) {
     $product_placeholders = [];
@@ -292,8 +304,8 @@ try {
     $product_params['end_date'] = $end_date;
   }
 
-  // チームフィルタまたはメンバーフィルタがある場合はmembersテーブルをJOIN
-  $need_member_join = !empty($team_ids) || !empty($member_ids);
+  // メンバーフィルタがある場合はmembersテーブルをJOIN
+  $need_member_join = !empty($member_ids);
   $member_join = $need_member_join ? "LEFT JOIN members m ON sr.tenant_id = m.tenant_id AND sr.member_id = m.member_id" : "";
 
   // 詳細フィルタ条件を追加
@@ -307,17 +319,8 @@ try {
     $sr_product_where_conditions[] = "sr.member_id IN (" . implode(',', $member_placeholders) . ")";
   }
 
-  // チームフィルタ条件（membersテーブルをJOINした後でのみ有効）
+  // team_idsは既にmember_idsに統合済み（上記のフィルタ統合ロジック参照）
   $team_where_condition = "";
-  if (!empty($team_ids)) {
-    $team_placeholders = [];
-    foreach ($team_ids as $idx => $team_id) {
-      $key = "product_team_filter_$idx";
-      $team_placeholders[] = ":$key";
-      $product_params[$key] = $team_id;
-    }
-    $team_where_condition = " AND m.team_id IN (" . implode(',', $team_placeholders) . ")";
-  }
 
   if (!empty($product_ids)) {
     $product_placeholders = [];
@@ -483,15 +486,7 @@ try {
     $team_where .= " AND sr.member_id IN (" . implode(',', $member_placeholders) . ")";
   }
   
-  if (!empty($team_ids)) {
-    $team_id_placeholders = [];
-    foreach ($team_ids as $idx => $team_id) {
-      $key = "team_filter_$idx";
-      $team_id_placeholders[] = ":$key";
-      $team_params[$key] = $team_id;
-    }
-    $team_where .= " AND m.team_id IN (" . implode(',', $team_id_placeholders) . ")";
-  }
+  // team_idsは既にmember_idsに統合済み（上記のフィルタ統合ロジック参照）
   
   if (!empty($product_ids)) {
     $product_placeholders = [];

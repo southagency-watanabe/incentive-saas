@@ -18,3 +18,5 @@ SELECT 'bulletin_templates テーブルを作成しました' AS message;
 
 
 
+
+

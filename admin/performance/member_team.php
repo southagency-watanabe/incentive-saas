@@ -170,15 +170,29 @@ $products = $stmt->fetchAll();
       console.log('loadFilterOptions: スキップ（loadDashboardFiltersを使用）');
     };
 
-    // デフォルトのグラフタブをメンバー別売上に変更
-    currentGraphTab = 'member_sales';
-
     // ダッシュボードフィルタの初期化
     document.addEventListener('DOMContentLoaded', () => {
       console.log('ページ初期化開始');
 
-      // デフォルトでメンバー別売上グラフを選択
+      // メンバー別/チーム別ページでは、メンバー・チームタブのみ表示し、商品別タブを非表示にする
+      const productSalesBtn = document.getElementById('graphTabProductSales');
+      const productProfitBtn = document.getElementById('graphTabProductProfit');
       const memberSalesBtn = document.getElementById('graphTabMemberSales');
+      const memberProfitBtn = document.getElementById('graphTabMemberProfit');
+      const teamSalesBtn = document.getElementById('graphTabTeamSales');
+      const teamProfitBtn = document.getElementById('graphTabTeamProfit');
+      
+      // 商品別タブを非表示
+      if (productSalesBtn) productSalesBtn.style.display = 'none';
+      if (productProfitBtn) productProfitBtn.style.display = 'none';
+      
+      // メンバー別とチーム別タブを表示
+      if (memberSalesBtn) memberSalesBtn.style.display = '';
+      if (memberProfitBtn) memberProfitBtn.style.display = '';
+      if (teamSalesBtn) teamSalesBtn.style.display = '';
+      if (teamProfitBtn) teamProfitBtn.style.display = '';
+      
+      // デフォルトでメンバー別売上グラフを選択
       if (memberSalesBtn) {
         memberSalesBtn.className = 'px-4 py-2 rounded bg-blue-600 text-white font-medium';
       }

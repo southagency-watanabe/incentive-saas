@@ -174,11 +174,28 @@ $products = $stmt->fetchAll();
     document.addEventListener('DOMContentLoaded', () => {
       console.log('ページ初期化開始');
 
-      // デフォルトで商品別売上グラフを選択
+      // 商品別ページでは、商品別タブのみ表示し、メンバー別とチーム別のタブを非表示にする
       const productSalesBtn = document.getElementById('graphTabProductSales');
+      const productProfitBtn = document.getElementById('graphTabProductProfit');
+      const memberSalesBtn = document.getElementById('graphTabMemberSales');
+      const memberProfitBtn = document.getElementById('graphTabMemberProfit');
+      const teamSalesBtn = document.getElementById('graphTabTeamSales');
+      const teamProfitBtn = document.getElementById('graphTabTeamProfit');
+      
+      // デフォルトで商品別売上グラフを選択
       if (productSalesBtn) {
         productSalesBtn.className = 'px-4 py-2 rounded bg-blue-600 text-white font-medium';
       }
+      
+      // 商品別タブを表示
+      if (productSalesBtn) productSalesBtn.style.display = '';
+      if (productProfitBtn) productProfitBtn.style.display = '';
+      
+      // メンバー別とチーム別タブを非表示
+      if (memberSalesBtn) memberSalesBtn.style.display = 'none';
+      if (memberProfitBtn) memberProfitBtn.style.display = 'none';
+      if (teamSalesBtn) teamSalesBtn.style.display = 'none';
+      if (teamProfitBtn) teamProfitBtn.style.display = 'none';
 
       loadDashboardFilters();
       applyDashPreset();

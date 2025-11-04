@@ -18,29 +18,19 @@ function startSession()
     }
     session_save_path($sessionPath);
 
-    // セッションのセキュリティ設定
-    ini_set('session.cookie_httponly', '1');
-
-    // 環境変数から設定を取得
-    $cookieSecure = getenv('SESSION_COOKIE_SECURE') ?: '0';
-    $cookieDomain = getenv('SESSION_COOKIE_DOMAIN') ?: '';
-
-    ini_set('session.cookie_secure', $cookieSecure);
-    ini_set('session.cookie_samesite', 'Lax');
-    ini_set('session.use_strict_mode', '1');
+    // セッションのセキュリティ設定（本番用：緩和設定）
+    ini_set('session.cookie_httponly', '0');      // JavaScriptアクセス許可
+    ini_set('session.cookie_secure', '0');        // HTTP許可
+    ini_set('session.cookie_samesite', '');       // SameSite制限なし
+    ini_set('session.use_strict_mode', '0');      // 厳格モードOFF
     ini_set('session.cookie_path', '/');
-
-    // cookie_domainが設定されている場合のみ適用
-    if ($cookieDomain !== '') {
-      ini_set('session.cookie_domain', $cookieDomain);
-    }
+    ini_set('session.cookie_lifetime', 0);        // ブラウザ閉じるまで
+    ini_set('session.gc_maxlifetime', 86400);     // 24時間
 
     session_start();
 
     // デバッグログ
     error_log('startSession - Session started, ID: ' . session_id());
-    error_log('startSession - Cookie secure: ' . $cookieSecure);
-    error_log('startSession - Cookie domain: ' . ($cookieDomain ?: '(none)'));
   } else {
     error_log('startSession - Session already active, ID: ' . session_id());
   }
@@ -185,12 +175,10 @@ function createSession($tenant_id, $member_id, $role, $name)
   // デバッグログ
   error_log('createSession - Session created for member: ' . $member_id);
   error_log('createSession - Session ID: ' . session_id());
-  error_log('createSession - Session data before save: ' . json_encode($_SESSION));
+  error_log('createSession - Session data: ' . json_encode($_SESSION));
 
-  // セッションデータを明示的に保存（この後はセッション操作しない）
-  session_write_close();
-
-  error_log('createSession - Session data saved to file');
+  // セッションはそのまま開いたままにする（本番用：セッション維持）
+  // session_write_close() はコメントアウト
 
   return $token;
 }

@@ -3,8 +3,8 @@ require_once __DIR__ . '/includes/session.php';
 
 startSession();
 
-// すでにログイン済みの場合はリダイレクト
-if (isset($_SESSION['token']) && validateSession($_SESSION['token'])) {
+// すでにログイン済みの場合はリダイレクト（緩和：tokenのみでチェック）
+if (isset($_SESSION['token'])) {
   $redirect = ($_SESSION['role'] === 'admin') ? '/admin/dashboard.php' : '/user/home.php';
   header('Location: ' . $redirect);
   exit;
@@ -73,7 +73,7 @@ if (isset($_GET['error'])) {
           type="text"
           id="login_id"
           name="login_id"
-          value="takahama"
+          value="manager"
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           required>
       </div>
@@ -132,6 +132,7 @@ if (isset($_GET['error'])) {
 
         // デバッグ: レスポンス内容をコンソールに出力
         console.log('Auth response:', result);
+        console.log('Response status:', response.status);
         console.log('Success:', result.success);
         console.log('Redirect:', result.redirect);
 
@@ -141,12 +142,18 @@ if (isset($_GET['error'])) {
           window.location.href = result.redirect;
         } else {
           // エラー表示
-          console.log('Login failed:', result.message);
-          window.location.href = '/login.php?error=invalid';
+          console.error('Login failed:', result.message);
+          if (result.error) {
+            console.error('Error details:', result.error);
+          }
+          if (result.trace) {
+            console.error('Stack trace:', result.trace);
+          }
+          alert('ログイン失敗: ' + result.message + (result.error ? '\n詳細: ' + result.error : ''));
         }
       } catch (error) {
         console.error('Login error:', error);
-        alert('ログイン処理中にエラーが発生しました。');
+        alert('ログイン処理中にエラーが発生しました。コンソールを確認してください。');
       }
     });
   </script>

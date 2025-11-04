@@ -1,5 +1,13 @@
--- インセンティブSaaS データベーステーブル作成スクリプト（本番環境用）
+-- ============================================
+-- インセンティブSaaS 全テーブル作成（本番環境用）
+-- テーブル構造のみを作成（データは含まない）
+-- ============================================
+
 USE xs063745_incentive;
+
+-- ============================================
+-- STEP 1: 基本テーブル作成
+-- ============================================
 
 -- テナントテーブル
 CREATE TABLE IF NOT EXISTS tenants (
@@ -8,7 +16,7 @@ CREATE TABLE IF NOT EXISTS tenants (
     status ENUM('有効', '無効') DEFAULT '有効',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- メンバーテーブル
 CREATE TABLE IF NOT EXISTS members (
@@ -27,7 +35,7 @@ CREATE TABLE IF NOT EXISTS members (
     UNIQUE KEY unique_login (tenant_id, login_id),
     UNIQUE KEY unique_member_tenant (member_id, tenant_id),
     FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- セッションテーブル
 CREATE TABLE IF NOT EXISTS sessions (
@@ -37,7 +45,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     expires_at TIMESTAMP NOT NULL,
     last_accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- チームテーブル
 CREATE TABLE IF NOT EXISTS teams (
@@ -50,7 +58,7 @@ CREATE TABLE IF NOT EXISTS teams (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (team_id, tenant_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 商品テーブル
 CREATE TABLE IF NOT EXISTS products (
@@ -69,7 +77,7 @@ CREATE TABLE IF NOT EXISTS products (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (product_id, tenant_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- タスクテーブル
 CREATE TABLE IF NOT EXISTS tasks (
@@ -90,13 +98,14 @@ CREATE TABLE IF NOT EXISTS tasks (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (task_id, tenant_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- アクションテーブル
 CREATE TABLE IF NOT EXISTS actions (
     action_id VARCHAR(20) NOT NULL,
     tenant_id VARCHAR(20) NOT NULL,
     action_name VARCHAR(100) NOT NULL,
+    category VARCHAR(50) DEFAULT NULL COMMENT 'アクションカテゴリ',
     repeat_type ENUM('毎日', '毎週', '毎月', '単発') DEFAULT '単発',
     start_date DATE,
     end_date DATE,
@@ -109,8 +118,9 @@ CREATE TABLE IF NOT EXISTS actions (
     approval_required BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (action_id, tenant_id)
-);
+    PRIMARY KEY (action_id, tenant_id),
+    INDEX idx_actions_category (category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- イベントテーブル
 CREATE TABLE IF NOT EXISTS events (
@@ -126,6 +136,7 @@ CREATE TABLE IF NOT EXISTS events (
     target_type ENUM('全商品', '特定商品', 'カテゴリ', '全アクション', '特定アクション') DEFAULT '全商品',
     target_ids TEXT,
     multiplier DECIMAL(3,2) DEFAULT 1.00,
+    approval_required BOOLEAN DEFAULT FALSE COMMENT 'イベント承認要否',
     status ENUM('有効', '無効') DEFAULT '有効',
     publish_notice BOOLEAN DEFAULT FALSE,
     notice_title VARCHAR(200),
@@ -133,7 +144,7 @@ CREATE TABLE IF NOT EXISTS events (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (event_id, tenant_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 売上記録テーブル
 CREATE TABLE IF NOT EXISTS sales_records (
@@ -155,7 +166,7 @@ CREATE TABLE IF NOT EXISTS sales_records (
     approved_at TIMESTAMP NULL,
     reject_reason TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- タスク記録テーブル
 CREATE TABLE IF NOT EXISTS task_records (
@@ -170,7 +181,7 @@ CREATE TABLE IF NOT EXISTS task_records (
     approved_at TIMESTAMP NULL,
     reject_reason TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- アクション記録テーブル
 CREATE TABLE IF NOT EXISTS action_records (
@@ -185,7 +196,7 @@ CREATE TABLE IF NOT EXISTS action_records (
     approved_at TIMESTAMP NULL,
     reject_reason TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- お知らせテーブル
 CREATE TABLE IF NOT EXISTS bulletins (
@@ -203,7 +214,7 @@ CREATE TABLE IF NOT EXISTS bulletins (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (bulletin_id, tenant_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 監査ログテーブル
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -217,4 +228,127 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     user_display_name VARCHAR(100) NOT NULL,
     details JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SELECT '基本テーブル作成完了' AS message;
+
+-- ============================================
+-- STEP 2: テナント設定テーブル
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS tenant_settings (
+    tenant_id VARCHAR(20) NOT NULL,
+    setting_key VARCHAR(100) NOT NULL,
+    setting_value TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (tenant_id, setting_key),
+    FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX IF NOT EXISTS idx_tenant_settings_key ON tenant_settings(setting_key);
+
+SELECT 'tenant_settings テーブルを作成しました' AS message;
+
+-- ============================================
+-- STEP 3: イベント商品別倍率テーブル
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS event_product_multipliers (
+    event_id VARCHAR(20) NOT NULL,
+    tenant_id VARCHAR(20) NOT NULL,
+    product_id VARCHAR(20) NOT NULL,
+    multiplier DECIMAL(4,2) DEFAULT 1.00 NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (event_id, tenant_id, product_id),
+    FOREIGN KEY (event_id, tenant_id) REFERENCES events(event_id, tenant_id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id, tenant_id) REFERENCES products(product_id, tenant_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_event_product_event ON event_product_multipliers(event_id, tenant_id);
+CREATE INDEX idx_event_product_product ON event_product_multipliers(product_id, tenant_id);
+
+SELECT 'event_product_multipliers テーブルを作成しました' AS message;
+
+-- ============================================
+-- STEP 4: イベント商品カテゴリ別倍率テーブル
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS event_product_category_multipliers (
+    event_id VARCHAR(20) NOT NULL,
+    tenant_id VARCHAR(20) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    multiplier DECIMAL(4,2) DEFAULT 1.00 NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (event_id, tenant_id, category),
+    FOREIGN KEY (event_id, tenant_id) REFERENCES events(event_id, tenant_id) ON DELETE CASCADE,
+    INDEX idx_event_product_category_event (event_id, tenant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SELECT 'event_product_category_multipliers テーブルを作成しました' AS message;
+
+-- ============================================
+-- STEP 5: イベントアクション別倍率テーブル
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS event_action_multipliers (
+    event_id VARCHAR(20) NOT NULL,
+    tenant_id VARCHAR(20) NOT NULL,
+    action_id VARCHAR(20) NOT NULL,
+    multiplier DECIMAL(4,2) DEFAULT 1.00 NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (event_id, tenant_id, action_id),
+    FOREIGN KEY (event_id, tenant_id) REFERENCES events(event_id, tenant_id) ON DELETE CASCADE,
+    FOREIGN KEY (action_id, tenant_id) REFERENCES actions(action_id, tenant_id) ON DELETE CASCADE,
+    INDEX idx_event_action_event (event_id, tenant_id),
+    INDEX idx_event_action_action (action_id, tenant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SELECT 'event_action_multipliers テーブルを作成しました' AS message;
+
+-- ============================================
+-- STEP 6: イベントアクションカテゴリ別倍率テーブル
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS event_action_category_multipliers (
+    event_id VARCHAR(20) NOT NULL,
+    tenant_id VARCHAR(20) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    multiplier DECIMAL(4,2) DEFAULT 1.00 NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (event_id, tenant_id, category),
+    FOREIGN KEY (event_id, tenant_id) REFERENCES events(event_id, tenant_id) ON DELETE CASCADE,
+    INDEX idx_event_action_category_event (event_id, tenant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SELECT 'event_action_category_multipliers テーブルを作成しました' AS message;
+
+-- ============================================
+-- STEP 7: お知らせテンプレートテーブル
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS bulletin_templates (
+    template_id VARCHAR(20) NOT NULL,
+    tenant_id VARCHAR(20) NOT NULL,
+    template_name VARCHAR(100) NOT NULL COMMENT 'テンプレート名',
+    title VARCHAR(200) NOT NULL COMMENT 'お知らせタイトル',
+    body TEXT NOT NULL COMMENT 'お知らせ本文',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (template_id, tenant_id),
+    FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SELECT 'bulletin_templates テーブルを作成しました' AS message;
+
+-- ============================================
+-- 完了メッセージ
+-- ============================================
+
+SELECT '========================================' AS message;
+SELECT '全テーブル作成が完了しました！' AS message;
+SELECT '========================================' AS message;

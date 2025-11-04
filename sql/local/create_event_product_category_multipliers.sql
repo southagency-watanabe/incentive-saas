@@ -18,3 +18,5 @@ SELECT 'event_product_category_multipliers テーブルを作成しました' AS
 
 
 
+
+

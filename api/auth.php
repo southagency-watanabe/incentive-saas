@@ -27,8 +27,11 @@ $tenant_id = trim($data['tenant_id']);
 $login_id = trim($data['login_id']);
 $pin = trim($data['pin']);
 
+error_log('Login attempt: tenant=' . $tenant_id . ', login=' . $login_id);
+
 try {
   $pdo = getDB();
+  error_log('Database connection successful');
 
   // テナントとメンバーを取得
   $stmt = $pdo->prepare("
@@ -120,6 +123,22 @@ try {
   ]);
 } catch (PDOException $e) {
   error_log('Login error: ' . $e->getMessage());
+  error_log('Login error trace: ' . $e->getTraceAsString());
   http_response_code(500);
-  echo json_encode(['success' => false, 'message' => 'サーバーエラーが発生しました。']);
+  echo json_encode([
+    'success' => false,
+    'message' => 'サーバーエラーが発生しました。',
+    'error' => $e->getMessage(),
+    'trace' => $e->getTraceAsString()
+  ]);
+} catch (Exception $e) {
+  error_log('Login exception: ' . $e->getMessage());
+  error_log('Login exception trace: ' . $e->getTraceAsString());
+  http_response_code(500);
+  echo json_encode([
+    'success' => false,
+    'message' => 'エラーが発生しました。',
+    'error' => $e->getMessage(),
+    'trace' => $e->getTraceAsString()
+  ]);
 }
